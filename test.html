@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Management System - Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Business Management System - Test Results</h1>
+    
+    <div class="test-section">
+        <h2>System Status</h2>
+        <div id="status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Table Schemas</h2>
+        <div id="schemas"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Sample Data</h2>
+        <div id="data"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test API Endpoints</h2>
+        <button onclick="testEndpoints()">Test API Calls</button>
+        <div id="api-results"></div>
+    </div>
+
+    <script>
+        // Test system status
+        function testSystem() {
+            const statusDiv = document.getElementById('status');
+            let html = '';
+            
+            // Test localStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                html += '<p class="success">✓ localStorage working</p>';
+            } catch (e) {
+                html += '<p class="error">✗ localStorage error: ' + e.message + '</p>';
+            }
+            
+            // Test fetch API
+            if (typeof fetch === 'function') {
+                html += '<p class="success">✓ Fetch API available</p>';
+            } else {
+                html += '<p class="error">✗ Fetch API not available</p>';
+            }
+            
+            // Test JSON
+            try {
+                JSON.parse('{"test": true}');
+                html += '<p class="success">✓ JSON parsing working</p>';
+            } catch (e) {
+                html += '<p class="error">✗ JSON parsing error: ' + e.message + '</p>';
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+        
+        // Test table schemas
+        async function testSchemas() {
+            const schemasDiv = document.getElementById('schemas');
+            try {
+                const response = await fetch('tables/clients');
+                if (response.ok) {
+                    const data = await response.json();
+                    schemasDiv.innerHTML = '<p class="success">✓ Clients table accessible</p>';
+                    schemasDiv.innerHTML += '<p>Total clients: ' + (data.total || 0) + '</p>';
+                } else {
+                    schemasDiv.innerHTML = '<p class="error">✗ Clients table error: ' + response.status + '</p>';
+                }
+            } catch (e) {
+                schemasDiv.innerHTML = '<p class="error">✗ API error: ' + e.message + '</p>';
+            }
+        }
+        
+        // Test sample data
+        async function testData() {
+            const dataDiv = document.getElementById('data');
+            try {
+                const [clientsRes, rolesRes, inventoryRes] = await Promise.all([
+                    fetch('tables/clients'),
+                    fetch('tables/roles'),
+                    fetch('tables/inventory')
+                ]);
+                
+                const clients = await clientsRes.json();
+                const roles = await rolesRes.json();
+                const inventory = await inventoryRes.json();
+                
+                dataDiv.innerHTML = '<p class="success">✓ All tables accessible</p>';
+                dataDiv.innerHTML += '<p>Clients: ' + (clients.total || 0) + '</p>';
+                dataDiv.innerHTML += '<p>Roles: ' + (roles.total || 0) + '</p>';
+                dataDiv.innerHTML += '<p>Inventory: ' + (inventory.total || 0) + '</p>';
+            } catch (e) {
+                dataDiv.innerHTML = '<p class="error">✗ Data error: ' + e.message + '</p>';
+            }
+        }
+        
+        // Test API endpoints
+        async function testEndpoints() {
+            const resultsDiv = document.getElementById('api-results');
+            resultsDiv.innerHTML = '<p>Testing API endpoints...</p>';
+            
+            try {
+                const response = await fetch('tables/clients');
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = '<p class="success">✓ API test successful</p>';
+                resultsDiv.innerHTML += '<p>Status: ' + response.status + '</p>';
+                resultsDiv.innerHTML += '<p>Data count: ' + (data.data?.length || 0) + '</p>';
+            } catch (e) {
+                resultsDiv.innerHTML = '<p class="error">✗ API test failed: ' + e.message + '</p>';
+            }
+        }
+        
+        // Run tests on page load
+        window.addEventListener('load', () => {
+            testSystem();
+            testSchemas();
+            testData();
+        });
+    </script>
+</body>
+</html>
