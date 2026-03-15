@@ -39,6 +39,8 @@ const Dashboard = () => {
     activeClients: 0,
     totalInventory: 0,
     customersWithInventory: 0,
+    totalProcessedSales: 0,
+    customersInProcessedSales: 0,
     totalRoles: 0,
     activeUsers: 0
   });
@@ -115,20 +117,26 @@ const Dashboard = () => {
   const loadDashboardData = async () => {
     setError(null);
     try {
-      const [clientsRes, activeClientsRes, inventoryRes, customersWithInvRes, rolesRes, profilesRes] = await Promise.all([
+      const [clientsRes, activeClientsRes, inventoryRes, customersWithInvRes, processedSummaryRes, rolesRes, profilesRes] = await Promise.all([
         supabase.from('clients').select('*', { count: 'exact', head: true }),
         supabase.from('clients').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('inventorydata').select('*', { count: 'exact', head: true }),
         supabase.rpc('get_inventory_customer_count'),
+        supabase.rpc('get_saleprocessedvins_summary'),
         supabase.from('roles').select('*', { count: 'exact', head: true }),
         supabase.from('profiles').select('*', { count: 'exact', head: true })
       ]);
 
+      const processed = (processedSummaryRes.data && processedSummaryRes.data[0]) || {};
+      const totalProcessed = Math.max(0, Number(processed.total_rows) || 0);
+      const customersProcessed = Math.max(0, Number(processed.customer_count) || 0);
       setStats({
         totalClients: clientsRes.count ?? 0,
         activeClients: activeClientsRes.count ?? 0,
         totalInventory: inventoryRes.count ?? 0,
         customersWithInventory: (customersWithInvRes.error ? 0 : (customersWithInvRes.data ?? 0)),
+        totalProcessedSales: totalProcessed,
+        customersInProcessedSales: customersProcessed,
         totalRoles: rolesRes.count ?? 0,
         activeUsers: profilesRes.count ?? 0
       });
@@ -290,7 +298,7 @@ const Dashboard = () => {
           {error}
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
         <div className="bg-white p-3 rounded shadow-md">
           <div className="flex items-center">
             <div className="p-2 rounded-full bg-blue-100 text-blue-600">
@@ -314,6 +322,18 @@ const Dashboard = () => {
               <p className="text-gray-600 text-xs">Total Inventory</p>
               <p className="text-lg font-bold text-gray-800">{stats.totalInventory}</p>
               <p className="text-gray-500 text-[10px] mt-0.5">from {stats.customersWithInventory} customer{stats.customersWithInventory !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white p-3 rounded shadow-md">
+          <div className="flex items-center">
+            <div className="p-2 rounded-full bg-teal-100 text-teal-600">
+              <i className="fas fa-file-invoice text-sm"></i>
+            </div>
+            <div className="ml-3">
+              <p className="text-gray-600 text-xs">Processed Sales</p>
+              <p className="text-lg font-bold text-gray-800">{(Number(stats.totalProcessedSales) || 0).toLocaleString()}</p>
+              <p className="text-gray-500 text-[10px] mt-0.5">from {Number(stats.customersInProcessedSales) || 0} customer{(Number(stats.customersInProcessedSales) || 0) !== 1 ? 's' : ''}</p>
             </div>
           </div>
         </div>
@@ -359,23 +379,6 @@ const Dashboard = () => {
       </div>
 
       <div className="bg-white p-4 rounded shadow-md mb-4">
-        <h2 className="text-sm font-semibold text-gray-800 mb-3">This month — daily sales</h2>
-        {salesChartError && (
-          <div className="mb-3 p-2 rounded bg-amber-50 text-amber-800 text-xs">
-            {salesChartError} (Run migration <code>get_daily_sales_current_month.sql</code> if needed.)
-          </div>
-        )}
-        {!salesChartError && dailySalesData.length === 0 && (
-          <p className="text-gray-500 text-xs">No sales data for this month yet.</p>
-        )}
-        {!salesChartError && dailySalesData.length > 0 && (
-          <div className="h-64 sm:h-80">
-            <Line data={salesChartData} options={salesChartOptions} />
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white p-4 rounded shadow-md mb-4">
         <h2 className="text-sm font-semibold text-gray-800 mb-3">This month — sales by customer</h2>
         {salesByCustomerChartError && (
           <div className="mb-3 p-2 rounded bg-amber-50 text-amber-800 text-xs">
@@ -388,6 +391,23 @@ const Dashboard = () => {
         {!salesByCustomerChartError && salesByCustomerChartData.datasets.length > 0 && (
           <div className="h-64 sm:h-80">
             <Line data={salesByCustomerChartData} options={salesByCustomerChartOptions} />
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white p-4 rounded shadow-md mb-4">
+        <h2 className="text-sm font-semibold text-gray-800 mb-3">This month — daily sales</h2>
+        {salesChartError && (
+          <div className="mb-3 p-2 rounded bg-amber-50 text-amber-800 text-xs">
+            {salesChartError} (Run migration <code>get_daily_sales_current_month.sql</code> if needed.)
+          </div>
+        )}
+        {!salesChartError && dailySalesData.length === 0 && (
+          <p className="text-gray-500 text-xs">No sales data for this month yet.</p>
+        )}
+        {!salesChartError && dailySalesData.length > 0 && (
+          <div className="h-64 sm:h-80">
+            <Line data={salesChartData} options={salesChartOptions} />
           </div>
         )}
       </div>
