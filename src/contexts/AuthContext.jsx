@@ -26,7 +26,7 @@ function mapSupabaseUser(supabaseUser, session) {
 }
 
 const ROLE_FETCH_TIMEOUT_MS = 25000;
-const SESSION_LOAD_TIMEOUT_MS = 12000;
+const SESSION_LOAD_TIMEOUT_MS = 25000;
 
 const ROLE_RPC_TIMEOUT_MS = 8000;
 
@@ -100,15 +100,10 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let cancelled = false;
 
-    const resolveSession = async () => {
+    const initSession = async () => {
       try {
-        const result = await withTimeout(
-          supabase.auth.getSession(),
-          SESSION_LOAD_TIMEOUT_MS,
-          'Session load timeout'
-        );
+        const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
-        const { data: { session } } = result;
         if (session?.user) {
           await setUserWithRole(session.user, session);
           if (!cancelled) setConnectionError(null);
@@ -127,7 +122,7 @@ export const AuthProvider = ({ children }) => {
       }
     };
 
-    resolveSession();
+    initSession();
 
     const {
       data: { subscription }
