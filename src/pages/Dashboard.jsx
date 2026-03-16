@@ -53,6 +53,7 @@ const Dashboard = () => {
   const [salesChartError, setSalesChartError] = useState(null);
   const [salesByCustomerChartError, setSalesByCustomerChartError] = useState(null);
   const [legendTooltip, setLegendTooltip] = useState({ show: false, text: '', x: 0, y: 0 });
+  const [dashboardLoading, setDashboardLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
@@ -117,6 +118,7 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     setError(null);
+    setDashboardLoading(true);
     try {
       const [clientsRes, activeClientsRes, inventoryRes, customersWithInvRes, processedSummaryRes, rolesRes, profilesRes] = await Promise.all([
         supabase.from('clients').select('*', { count: 'exact', head: true }),
@@ -144,6 +146,8 @@ const Dashboard = () => {
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError(err?.message || 'Failed to load dashboard data.');
+    } finally {
+      setDashboardLoading(false);
     }
   };
 
@@ -322,6 +326,18 @@ const Dashboard = () => {
       y: { beginAtZero: true, title: { display: true, text: 'Sales (units)' } }
     }
   }), []);
+
+  if (dashboardLoading) {
+    return (
+      <div className="page-content text-xs flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center gap-3 text-gray-600">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-blue-500" aria-hidden="true" />
+          <p className="text-sm font-medium">Loading dashboard…</p>
+          <p className="text-xs text-gray-500">Please wait while we fetch your data.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-content text-xs">
