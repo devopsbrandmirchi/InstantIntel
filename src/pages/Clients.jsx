@@ -467,7 +467,7 @@ const Clients = () => {
                   onClick={() => handleSort('full_name')}
                 >
                   <span className="inline-flex items-center gap-1">
-                    Full name
+                    ID / Name
                     {sortBy === 'full_name' && <i className={`fas fa-caret-${sortAsc ? 'up' : 'down'} text-[10px]`} />}
                   </span>
                 </th>
@@ -522,7 +522,11 @@ const Clients = () => {
                           className={`fas fa-chevron-${expandedId === client.id ? 'down' : 'right'} text-gray-400`}
                         />
                       </td>
-                      <td className="px-2 py-1.5 text-gray-900">{client.full_name || '—'}</td>
+                      <td className="px-2 py-1.5 text-gray-900">
+                        <span className="font-medium text-gray-500">{client.id}</span>
+                        <span className="mx-1.5 text-gray-300">—</span>
+                        <span>{client.full_name || '—'}</span>
+                      </td>
                       <td className="px-2 py-1.5 text-gray-700">{client.dealer_type || '—'}</td>
                       <td className="px-2 py-1.5 text-gray-700 truncate max-w-[120px]" title={client.website}>
                         {client.website || '—'}
