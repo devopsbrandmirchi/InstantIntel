@@ -23,6 +23,7 @@ const Layout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const headerRef = useRef(null);
   const { currentUser, logout, connectionError, clearConnectionError } = useAuth();
   const navigate = useNavigate();
@@ -61,9 +62,25 @@ const Layout = ({ children }) => {
     };
   }, [isDesktop, sidebarOpen]);
 
+  useEffect(() => {
+    if (!logoutConfirmOpen) return;
+    const onEscape = (e) => {
+      if (e.key === 'Escape') setLogoutConfirmOpen(false);
+    };
+    document.addEventListener('keydown', onEscape);
+    return () => document.removeEventListener('keydown', onEscape);
+  }, [logoutConfirmOpen]);
+
   const handleLogout = async () => {
+    setLogoutConfirmOpen(false);
+    setUserMenuOpen(false);
     await logout();
     navigate('/login');
+  };
+
+  const openLogoutConfirm = () => {
+    setUserMenuOpen(false);
+    setLogoutConfirmOpen(true);
   };
 
   const toggleSidebar = () => {
@@ -224,7 +241,7 @@ const Layout = ({ children }) => {
                     </Link>
                     <hr className="my-0.5" />
                     <button
-                      onClick={handleLogout}
+                      onClick={openLogoutConfirm}
                       className="block w-full text-left px-3 py-1.5 text-gray-700 hover:bg-gray-100"
                       id="logoutBtn"
                     >
@@ -254,6 +271,50 @@ const Layout = ({ children }) => {
         )}
         <main className="flex-1 p-3 sm:p-4 overflow-auto min-h-0">{children}</main>
       </div>
+
+      {/* Logout confirmation modal */}
+      {logoutConfirmOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="logout-modal-title"
+          onClick={() => setLogoutConfirmOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-sm w-full overflow-hidden border border-slate-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 text-center">
+              <div className="mx-auto w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <i className="fas fa-sign-out-alt text-xl text-slate-500" aria-hidden="true" />
+              </div>
+              <h3 id="logout-modal-title" className="text-lg font-semibold text-slate-800 mb-1">
+                Sign out?
+              </h3>
+              <p className="text-sm text-slate-500 mb-6">
+                You can sign back in anytime with the same account.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  type="button"
+                  onClick={() => setLogoutConfirmOpen(false)}
+                  className="px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-4 py-2.5 text-sm font-medium text-white bg-slate-700 hover:bg-slate-800 rounded-xl transition-colors"
+                >
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
