@@ -108,6 +108,19 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                     <span className="nav-text">Sales Report</span>
                   </Link>
                 </li>
+                <li>
+                  <Link
+                    to="/inventory-daily-count"
+                    onClick={handleNavClick}
+                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md ${
+                      isActive('/inventory-daily-count') ? 'active' : ''
+                    }`}
+                    data-page="inventory-daily-count"
+                  >
+                    <i className="fas fa-list-ol mr-3 text-sm"></i>
+                    <span className="nav-text">Daily Inventory Count</span>
+                  </Link>
+                </li>
               </ul>
             </div>
           </li>

@@ -11,6 +11,7 @@ import Roles from './pages/Roles';
 import Inventory from './pages/Inventory';
 import InventoryReport from './pages/InventoryReport';
 import SalesReport from './pages/SalesReport';
+import InventoryDailyCount from './pages/InventoryDailyCount';
 import UserManagement from './pages/UserManagement';
 
 const PrivateRoute = ({ children }) => {
@@ -135,6 +136,16 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <SalesReport />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/inventory-daily-count"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <InventoryDailyCount />
                 </Layout>
               </PrivateRoute>
             }

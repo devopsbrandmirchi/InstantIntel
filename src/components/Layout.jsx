@@ -85,7 +85,8 @@ const Layout = ({ children }) => {
     '/roles': 'Role Management',
     '/inventory': 'Inventory Management',
     '/inventory-report': 'Inventory Report',
-    '/sales-report': 'Sales Report'
+    '/sales-report': 'Sales Report',
+    '/inventory-daily-count': 'Daily Inventory Count'
   };
 
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
