@@ -15,12 +15,13 @@ import InventoryDailyCount from './pages/InventoryDailyCount';
 import ScrapRawdataStats from './pages/ScrapRawdataStats';
 import NormalizedInventoryScrapStats from './pages/NormalizedInventoryScrapStats';
 import UserManagement from './pages/UserManagement';
+import AppLoadingScreen from './components/AppLoadingScreen';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <AppLoadingScreen message="Preparing your dashboard…" />;
   }
 
   return currentUser ? children : <Navigate to="/login" />;
@@ -30,7 +31,7 @@ const GuestRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <AppLoadingScreen message="One moment…" />;
   }
 
   return !currentUser ? children : <Navigate to="/dashboard" replace />;
@@ -40,7 +41,7 @@ const AdminRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return <AppLoadingScreen message="Verifying access…" />;
   }
 
   if (!currentUser) return <Navigate to="/login" replace />;
