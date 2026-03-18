@@ -23,28 +23,28 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
 
   return (
     <div
-      className={`sidebar bg-gray-800 text-white w-64 flex-shrink-0 transition-all duration-300 ${collapsed && isDesktop ? 'collapsed' : ''} ${!isDesktop && mobileOpen ? 'sidebar-mobile-open' : ''}`}
+      className={`sidebar sidebar-themed w-64 flex-shrink-0 transition-all duration-300 ${collapsed && isDesktop ? 'collapsed' : ''} ${!isDesktop && mobileOpen ? 'sidebar-mobile-open' : ''}`}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="p-4 border-b border-gray-200 sidebar-header">
+      <div className="p-4 border-b border-white/10 sidebar-header">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-800">
-            <i className="fas fa-building mr-2 text-blue-600"></i>
-            {(!collapsed || !isDesktop) && <span className="text-gray-800">Instant Intel</span>}
+          <h2 className="text-xl font-bold text-white">
+            <i className="fas fa-building mr-2 text-amber-400/90"></i>
+            {(!collapsed || !isDesktop) && <span className="text-white">Instant Intel</span>}
           </h2>
           <div className="flex items-center gap-1">
             {!isDesktop && (
               <button
                 onClick={onCloseMobile}
-                className="text-gray-600 hover:text-gray-800 p-2 -m-2 md:hidden"
+                className="text-white/70 hover:text-white p-2 -m-2 md:hidden"
                 aria-label="Close menu"
               >
                 <i className="fas fa-times"></i>
               </button>
             )}
             {isDesktop && (
-              <button onClick={onToggle} className="text-gray-600 hover:text-gray-800 p-2 -m-2" aria-label="Collapse menu">
+              <button onClick={onToggle} className="text-white/70 hover:text-white p-2 -m-2" aria-label="Collapse menu">
                 <i className="fas fa-bars"></i>
               </button>
             )}
@@ -58,7 +58,7 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
               <Link
                 to={item.path}
                 onClick={handleNavClick}
-                className={`nav-link flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md ${
+                className={`nav-link flex items-center px-4 py-2 text-white/85 hover:bg-white/10 hover:text-white rounded-md ${
                   isActive(item.path) ? 'active' : ''
                 }`}
                 data-page={item.page}
@@ -72,7 +72,7 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
             <div className="nav-menu-item">
               <button
                 onClick={() => setReportsMenuOpen(!reportsMenuOpen)}
-                className="nav-link flex items-center justify-between w-full px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md"
+                className="nav-link flex items-center justify-between w-full px-4 py-2 text-white/85 hover:bg-white/10 hover:text-white rounded-md"
                 id="reportsMenuToggle"
               >
                 <div className="flex items-center">
@@ -86,7 +86,7 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                   <Link
                     to="/inventory-report"
                     onClick={handleNavClick}
-                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md ${
+                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-white/75 hover:bg-white/10 hover:text-white rounded-md ${
                       isActive('/inventory-report') ? 'active' : ''
                     }`}
                     data-page="inventory-report"
@@ -99,7 +99,7 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                   <Link
                     to="/sales-report"
                     onClick={handleNavClick}
-                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md ${
+                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-white/75 hover:bg-white/10 hover:text-white rounded-md ${
                       isActive('/sales-report') ? 'active' : ''
                     }`}
                     data-page="sales-report"
@@ -112,13 +112,26 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                   <Link
                     to="/inventory-daily-count"
                     onClick={handleNavClick}
-                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-gray-700 hover:bg-gray-100 hover:text-gray-900 rounded-md ${
+                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-white/75 hover:bg-white/10 hover:text-white rounded-md ${
                       isActive('/inventory-daily-count') ? 'active' : ''
                     }`}
                     data-page="inventory-daily-count"
                   >
                     <i className="fas fa-list-ol mr-3 text-sm"></i>
                     <span className="nav-text">Daily Inventory Count</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/scrap-feed-stats"
+                    onClick={handleNavClick}
+                    className={`nav-submenu-link flex items-center px-4 py-2 pl-12 text-white/75 hover:bg-white/10 hover:text-white rounded-md ${
+                      isActive('/scrap-feed-stats') ? 'active' : ''
+                    }`}
+                    data-page="scrap-feed-stats"
+                  >
+                    <i className="fas fa-table mr-3 text-sm"></i>
+                    <span className="nav-text">Scrap feed stats</span>
                   </Link>
                 </li>
               </ul>

@@ -28,6 +28,54 @@
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
+/* Sophisticated corporate sidebar – deep navy with subtle accent */
+.sidebar.sidebar-themed {
+    background: linear-gradient(180deg, #1e3a5f 0%, #152a45 50%, #0f2137 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+}
+.sidebar.sidebar-themed .sidebar-header {
+    background: rgba(0, 0, 0, 0.15);
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+.sidebar.sidebar-themed .nav-link {
+    color: rgba(255, 255, 255, 0.88);
+    border-left-color: transparent;
+}
+.sidebar.sidebar-themed .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-left-color: rgba(255, 255, 255, 0.2);
+}
+.sidebar.sidebar-themed .nav-link.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-left-color: #f59e0b;
+    color: #fff;
+    box-shadow: none;
+}
+.sidebar.sidebar-themed .nav-link.active:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+.sidebar.sidebar-themed .nav-link[data-page="dashboard"] i { color: #93c5fd; }
+.sidebar.sidebar-themed .nav-link[data-page="profile"] i { color: #86efac; }
+.sidebar.sidebar-themed .nav-link[data-page="clients"] i { color: #c4b5fd; }
+.sidebar.sidebar-themed .nav-link[data-page="roles"] i { color: #fcd34d; }
+.sidebar.sidebar-themed .nav-link[data-page="inventory"] i { color: #fca5a5; }
+.sidebar.sidebar-themed .nav-link[data-page="reports"] i,
+.sidebar.sidebar-themed #reportsMenuToggle i { color: #5eead4; }
+.sidebar.sidebar-themed .nav-submenu-link {
+    color: rgba(255, 255, 255, 0.78);
+}
+.sidebar.sidebar-themed .nav-submenu-link:hover,
+.sidebar.sidebar-themed .nav-submenu-link.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border-left-color: rgba(245, 158, 11, 0.6);
+}
+.sidebar.sidebar-themed .nav-chevron {
+    color: rgba(255, 255, 255, 0.5);
+}
+
 .sidebar.collapsed {
     width: 60px;
 }

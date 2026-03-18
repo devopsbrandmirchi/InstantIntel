@@ -12,6 +12,7 @@ import Inventory from './pages/Inventory';
 import InventoryReport from './pages/InventoryReport';
 import SalesReport from './pages/SalesReport';
 import InventoryDailyCount from './pages/InventoryDailyCount';
+import ScrapRawdataStats from './pages/ScrapRawdataStats';
 import UserManagement from './pages/UserManagement';
 
 const PrivateRoute = ({ children }) => {
@@ -146,6 +147,16 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <InventoryDailyCount />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/scrap-feed-stats"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <ScrapRawdataStats />
                 </Layout>
               </PrivateRoute>
             }

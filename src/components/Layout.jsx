@@ -103,7 +103,8 @@ const Layout = ({ children }) => {
     '/inventory': 'Inventory Management',
     '/inventory-report': 'Inventory Report',
     '/sales-report': 'Sales Report',
-    '/inventory-daily-count': 'Daily Inventory Count'
+    '/inventory-daily-count': 'Daily Inventory Count',
+    '/scrap-feed-stats': 'Scrap feed statistics'
   };
 
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
