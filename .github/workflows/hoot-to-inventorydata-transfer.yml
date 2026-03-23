@@ -12,8 +12,8 @@ name: Hoot to inventorydata transfer
 
 on:
   schedule:
-    # Run after Hoot import workflow (06:15 UTC): here 06:45 UTC daily.
-    - cron: '45 6 * * *'
+    # Run after Hoot import workflow (04:15 UTC): here 04:45 UTC daily.
+    - cron: '45 4 * * *'
   workflow_dispatch:
     inputs:
       transfer_date:

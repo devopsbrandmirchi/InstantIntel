@@ -15,8 +15,8 @@ name: Hoot inventory import
 
 on:
   schedule:
-    # Daily 06:15 UTC — adjust cron as needed (minute hour day month weekday)
-    - cron: '15 6 * * *'
+    # Daily 04:15 UTC — adjust cron as needed (minute hour day month weekday)
+    - cron: '15 4 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
