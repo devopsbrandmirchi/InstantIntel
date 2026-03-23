@@ -21,6 +21,8 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
+import json
 import os
 import sys
 import traceback
@@ -30,6 +32,22 @@ from typing import Any, Dict, List, Optional, Tuple
 import pandas as pd
 from dotenv import load_dotenv
 from supabase import Client, create_client
+
+
+def supabase_jwt_role(api_key: str) -> Optional[str]:
+    """Read JWT `role` claim (anon vs service_role). No crypto verify — local hint only."""
+    try:
+        parts = api_key.strip().split(".")
+        if len(parts) != 3:
+            return None
+        payload_b64 = parts[1]
+        pad = "=" * (-len(payload_b64) % 4)
+        raw = base64.urlsafe_b64decode(payload_b64 + pad)
+        payload = json.loads(raw.decode("utf-8"))
+        return payload.get("role")
+    except Exception:
+        return None
+
 
 # ---------------------------------------------------------------------------
 # CSV columns (order must match Django pandas DataFrame)
@@ -543,6 +561,25 @@ def main() -> None:
     if not url or not key:
         print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY", file=sys.stderr)
         sys.exit(1)
+
+    jwt_role = supabase_jwt_role(key)
+    if jwt_role:
+        print(f"API key JWT role: {jwt_role}")
+    if jwt_role == "anon":
+        print(
+            "\n*** Wrong key: this is the ANON (public) API key. "
+            "Row Level Security hides public.clients, so 0 rows are returned. ***\n"
+            "Fix: Supabase Dashboard → Project Settings → API → copy **service_role** "
+            "(secret) into GitHub Actions secret SUPABASE_SERVICE_ROLE_KEY.\n"
+            "SQL Editor uses the database role `postgres`, which bypasses RLS — that is why SQL still shows data.\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    if jwt_role and jwt_role != "service_role":
+        print(
+            f"Warning: expected JWT role 'service_role' for server imports; got '{jwt_role}'.",
+            file=sys.stderr,
+        )
 
     active_pull_only = os.environ.get("HOOT_ACTIVE_PULL_ONLY", "").strip() in ("1", "true", "True", "yes")
     _chunk = (os.environ.get("HOOT_CHUNK_SIZE") or "").strip()
