@@ -16,7 +16,6 @@ Optional:
   HOOT_CHUNK_SIZE=300        Rows per upsert request
   HOOT_HTTP_TIMEOUT=120      Seconds for Hoot CSV HTTP GET
   HOOT_HTTP_USER_AGENT=...   Override User-Agent (default: browser-like; avoids some 401s from urllib)
-  DOTENV_PATH                  Path to .env file (default: same dir as this script)
 
 Usage:
   python hoot_inventory_import.py
@@ -39,7 +38,6 @@ import io
 import pandas as pd
 import requests
 from requests.exceptions import HTTPError
-from dotenv import load_dotenv
 from supabase import Client, create_client
 
 
@@ -471,6 +469,9 @@ def inventory_rows_for_supabase(
         )
 
         location = d[14].replace(",", "") if d[14] else ""
+        # Keep conflict-key fields non-null so unique key + upsert can de-duplicate reliably.
+        vin_key = trunc(d[4]) or ""
+        url_key = trunc(d[21]) or ""
 
         row: Dict[str, Any] = {
             "customer_id": customer_id,
@@ -480,7 +481,7 @@ def inventory_rows_for_supabase(
             "year": trunc(d[1]),
             "make": trunc(d[2]),
             "model": trunc(the_model),
-            "vin": trunc(d[4]),
+            "vin": vin_key,
             "advertiser": trunc(d[5]),
             "color": trunc(d[6]),
             "description": trunc(d[7]),
@@ -497,7 +498,7 @@ def inventory_rows_for_supabase(
             "transmission": trunc(d[18]),
             "trim": trunc(the_trim),
             "type": trunc(d[20]),
-            "url": trunc(d[21]),
+            "url": url_key,
             "vehicle_type": trunc(d[22]),
             "custom_label_0": trunc(d[25]),
             "custom_label_1": trunc(d[26]),
@@ -614,9 +615,6 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Parse and build rows but do not write")
     parser.add_argument("--client-id", type=int, default=None, help="Process only this client id")
     args = parser.parse_args()
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    load_dotenv(os.environ.get("DOTENV_PATH", os.path.join(script_dir, ".env")))
 
     url = os.environ.get("SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
