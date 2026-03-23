@@ -7,7 +7,8 @@
 # Data: each row in public.clients needs inventory_api = full Hoot CSV URL or the job imports 0 rows.
 #
 # Optional repository variables/secrets (Settings → Secrets and variables → Actions):
-#   HOOT_ACTIVE_PULL_ONLY        Set to 1 to only process clients with active_pull and not scrap_feed
+#   HOOT_ACTIVE_PULL_ONLY        Default/on: only active_pull & not scrap_feed. Set 0 to disable that filter.
+#   HOOT_INCLUDE_INACTIVE_CLIENTS  Set 1 to also import dealers with is_active=false (default: skip inactive)
 #   HOOT_CHUNK_SIZE              Rows per upsert batch (default 300)
 
 name: Hoot inventory import
@@ -57,6 +58,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           HOOT_ACTIVE_PULL_ONLY: ${{ secrets.HOOT_ACTIVE_PULL_ONLY || vars.HOOT_ACTIVE_PULL_ONLY }}
+          HOOT_INCLUDE_INACTIVE_CLIENTS: ${{ secrets.HOOT_INCLUDE_INACTIVE_CLIENTS || vars.HOOT_INCLUDE_INACTIVE_CLIENTS }}
           HOOT_CHUNK_SIZE: ${{ secrets.HOOT_CHUNK_SIZE || vars.HOOT_CHUNK_SIZE }}
         run: |
           set -e
@@ -65,6 +67,7 @@ jobs:
             exit 1
           fi
           echo "HOOT_ACTIVE_PULL_ONLY=${HOOT_ACTIVE_PULL_ONLY:-<empty>}"
+          echo "HOOT_INCLUDE_INACTIVE_CLIENTS=${HOOT_INCLUDE_INACTIVE_CLIENTS:-<empty>}"
           ARGS=""
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ "${{ inputs.dry_run }}" = "true" ]; then

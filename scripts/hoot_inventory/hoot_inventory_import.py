@@ -11,8 +11,11 @@ Environment:
                                Do not use anon / publishable keys here.
 
 Optional:
-  HOOT_ACTIVE_PULL_ONLY=1      Only clients with active_pull=true and scrap_feed=false
+  HOOT_ACTIVE_PULL_ONLY=1      Default 1: only clients with active_pull=true and scrap_feed=false
+  HOOT_INCLUDE_INACTIVE_CLIENTS=1  If set, also import rows for is_active=false (default: skip inactive)
   HOOT_CHUNK_SIZE=300        Rows per upsert request
+  HOOT_HTTP_TIMEOUT=120      Seconds for Hoot CSV HTTP GET
+  HOOT_HTTP_USER_AGENT=...   Override User-Agent (default: browser-like; avoids some 401s from urllib)
   DOTENV_PATH                  Path to .env file (default: same dir as this script)
 
 Usage:
@@ -32,7 +35,10 @@ import traceback
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+import io
 import pandas as pd
+import requests
+from requests.exceptions import HTTPError
 from dotenv import load_dotenv
 from supabase import Client, create_client
 
@@ -60,6 +66,42 @@ def is_supabase_secret_key(api_key: str) -> bool:
 def is_supabase_publishable_key(api_key: str) -> bool:
     """Low-privilege browser key — wrong for this script."""
     return api_key.strip().startswith("sb_publishable_")
+
+
+def env_include_inactive_clients() -> bool:
+    return os.environ.get("HOOT_INCLUDE_INACTIVE_CLIENTS", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
+def env_active_pull_only() -> bool:
+    """Default True: only active_pull and not scrap_feed."""
+    raw = os.environ.get("HOOT_ACTIVE_PULL_ONLY", "1").strip().lower()
+    if raw in ("0", "false", "no", "off"):
+        return False
+    return True
+
+
+def client_passes_import_filters(
+    c: dict,
+    include_inactive: bool,
+    active_pull_only: bool,
+    single_id: Optional[int] = None,
+) -> bool:
+    if single_id is not None and int(c["id"]) != single_id:
+        return False
+    api = c.get("inventory_api")
+    if api is None or str(api).strip() == "":
+        return False
+    if not include_inactive and not c.get("is_active"):
+        return False
+    if active_pull_only:
+        if not c.get("active_pull") or c.get("scrap_feed"):
+            return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -479,7 +521,18 @@ def inventory_rows_for_supabase(
 
 
 def fetch_csv_rows(url: str) -> List[List[str]]:
-    df = pd.read_csv(url, sep=",", low_memory=False)
+    """Download CSV via requests (browser-like User-Agent). urllib/pandas default often gets HTTP 401 from Hoot."""
+    timeout = int(os.environ.get("HOOT_HTTP_TIMEOUT", "120"))
+    headers = {
+        "User-Agent": os.environ.get(
+            "HOOT_HTTP_USER_AGENT",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+        ),
+        "Accept": "text/csv,text/plain,*/*",
+    }
+    resp = requests.get(url, headers=headers, timeout=timeout)
+    resp.raise_for_status()
+    df = pd.read_csv(io.StringIO(resp.text), sep=",", low_memory=False)
     df = pd.DataFrame(df, columns=HOOT_CSV_COLUMNS)
     raw = df.to_numpy()
     return [normalize_row(list(row)) for row in raw]
@@ -499,48 +552,43 @@ def upsert_chunks(
 
 
 def clients_for_hoot_import(
-    supabase: Client, active_pull_only: bool, single_id: Optional[int] = None
+    supabase: Client,
+    include_inactive: bool,
+    active_pull_only: bool,
+    single_id: Optional[int] = None,
 ) -> List[dict]:
-    r = supabase.table("clients").select("id, full_name, inventory_api, active_pull, scrap_feed").execute()
+    r = supabase.table("clients").select(
+        "id, full_name, inventory_api, active_pull, scrap_feed, is_active"
+    ).execute()
     clients = r.data or []
     out = []
     for c in clients:
-        api = c.get("inventory_api")
-        if api is None or str(api).strip() == "":
-            continue
-        if single_id is not None and int(c["id"]) != single_id:
-            continue
-        if active_pull_only:
-            if not c.get("active_pull") or c.get("scrap_feed"):
-                continue
-        out.append(c)
+        if client_passes_import_filters(c, include_inactive, active_pull_only, single_id):
+            out.append(c)
     return out
 
 
-def print_import_diagnostics(supabase: Client, active_pull_only: bool) -> None:
-    """Explain why 0 clients might run: empty inventory_api, RLS, or active_pull filter."""
-    r = supabase.table("clients").select("id, full_name, inventory_api, active_pull, scrap_feed").execute()
+def print_import_diagnostics(
+    supabase: Client, include_inactive: bool, active_pull_only: bool
+) -> None:
+    """Explain why 0 clients might run: filters, empty inventory_api, or RLS."""
+    r = supabase.table("clients").select(
+        "id, full_name, inventory_api, active_pull, scrap_feed, is_active"
+    ).execute()
     rows = r.data or []
     total = len(rows)
     with_url = sum(1 for c in rows if c.get("inventory_api") and str(c.get("inventory_api")).strip())
-    if active_pull_only:
-        eligible_flags = sum(
-            1
-            for c in rows
-            if c.get("inventory_api")
-            and str(c.get("inventory_api")).strip()
-            and c.get("active_pull")
-            and not c.get("scrap_feed")
-        )
-    else:
-        eligible_flags = with_url
+    eligible = sum(
+        1 for c in rows if client_passes_import_filters(c, include_inactive, active_pull_only, None)
+    )
 
     print(f"clients rows visible to this key: {total}")
     print(f"clients with non-empty inventory_api (Hoot CSV URL): {with_url}")
-    if active_pull_only:
-        print(
-            f"clients matching HOOT_ACTIVE_PULL_ONLY (active_pull & not scrap_feed & has URL): {eligible_flags}"
-        )
+    print(
+        f"Filter flags: require is_active={not include_inactive}, "
+        f"require active_pull & not scrap_feed={active_pull_only}"
+    )
+    print(f"clients matching all filters (selected for import): {eligible}")
 
     if total == 0:
         print(
@@ -553,10 +601,11 @@ def print_import_diagnostics(supabase: Client, active_pull_only: bool) -> None:
             "\n*** No client has inventory_api set. "
             "In Supabase Table Editor or Client Master, set each dealer's inventory_api to the full Hoot CSV feed URL. ***\n"
         )
-    elif active_pull_only and eligible_flags == 0 and with_url > 0:
+    elif eligible == 0 and with_url > 0:
         print(
-            "\n*** HOOT_ACTIVE_PULL_ONLY=1 but no client has active_pull=true and scrap_feed=false with a URL. "
-            "Adjust client flags or set HOOT_ACTIVE_PULL_ONLY=0 to import all clients that have inventory_api. ***\n"
+            "\n*** No client passes filters. "
+            "Need is_active=true, inventory_api set, and (if active_pull_only) active_pull=true and scrap_feed=false. "
+            "Or set HOOT_INCLUDE_INACTIVE_CLIENTS=1 / HOOT_ACTIVE_PULL_ONLY=0 for broader runs. ***\n"
         )
 
 
@@ -607,7 +656,8 @@ def main() -> None:
             file=sys.stderr,
         )
 
-    active_pull_only = os.environ.get("HOOT_ACTIVE_PULL_ONLY", "").strip() in ("1", "true", "True", "yes")
+    include_inactive = env_include_inactive_clients()
+    active_pull_only = env_active_pull_only()
     _chunk = (os.environ.get("HOOT_CHUNK_SIZE") or "").strip()
     chunk_size = int(_chunk) if _chunk else 300
 
@@ -618,10 +668,13 @@ def main() -> None:
     pull_date_time = now
     print("Start Hoot inventory import:", now)
 
-    print_import_diagnostics(supabase, active_pull_only)
+    print_import_diagnostics(supabase, include_inactive, active_pull_only)
 
-    clients = clients_for_hoot_import(supabase, active_pull_only, args.client_id)
-    print(f"Clients selected for import: {len(clients)} (active_pull_only={active_pull_only})")
+    clients = clients_for_hoot_import(supabase, include_inactive, active_pull_only, args.client_id)
+    print(
+        f"Clients selected for import: {len(clients)} "
+        f"(require is_active={not include_inactive}, active_pull_only={active_pull_only})"
+    )
 
     custom_make_dictionary = get_custom_make_dictionary(supabase)
     custom_type_dictionary = get_custom_type_dictionary(supabase)
@@ -653,6 +706,15 @@ def main() -> None:
             n = upsert_chunks(supabase, "hoot_inventory", rows, chunk_size, args.dry_run)
             grant_total += n
             print(f"customer: {name}-{cid}, rows: {n}, time: {datetime.now()}")
+        except HTTPError as e:
+            code = e.response.status_code if e.response is not None else "?"
+            print(f"Error for customer:{name}, ID:{cid}, HTTP {code} fetching feed (check token/advertiser in URL).")
+            if code == 401:
+                print(
+                    "  Hint: 401 Unauthorized — token or advertiser may be wrong/expired for this feed, "
+                    "or Hoot rejected the request. Compare URL with a working dealer."
+                )
+            print(traceback.format_exc())
         except Exception:
             print(f"Error for customer:{name}, ID:{cid}, API URL:{api_url}")
             print(traceback.format_exc())
