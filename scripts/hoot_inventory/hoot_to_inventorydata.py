@@ -25,6 +25,7 @@ import sys
 from datetime import date
 from typing import Optional
 
+from postgrest.exceptions import APIError
 from supabase import create_client
 
 
@@ -84,9 +85,29 @@ def main() -> None:
     print(f"Run inventory transfer from hoot for date: {target_date}")
 
     supabase = create_client(url, key)
-    res = supabase.rpc("run_inventory_from_hoot", {"p_date": target_date}).execute()
-    payload = res.data
-    print(f"Function result: {payload}")
+    try:
+        res = supabase.rpc("run_inventory_from_hoot", {"p_date": target_date}).execute()
+        payload = res.data
+        print(f"Function result: {payload}")
+    except APIError as e:
+        code = ""
+        msg = ""
+        if isinstance(getattr(e, "args", None), tuple) and e.args:
+            maybe = e.args[0]
+            if isinstance(maybe, dict):
+                code = str(maybe.get("code") or "")
+                msg = str(maybe.get("message") or "")
+        if code == "PGRST202":
+            print(
+                "\nRPC function not found in Supabase schema cache.\n"
+                "Run migration `supabase/migrations/20260324130000_hoot_to_inventorydata.sql`\n"
+                "in your Supabase project, then re-run this workflow.\n"
+                "If already applied, wait ~30-60s and retry (schema cache refresh).",
+                file=sys.stderr,
+            )
+        else:
+            print(f"RPC call failed: {msg or str(e)}", file=sys.stderr)
+        raise
 
 
 if __name__ == "__main__":

@@ -22,6 +22,13 @@ BEGIN
     p_date := CURRENT_DATE;
   END IF;
 
+  -- Guard: keep inventorydata id sequence in sync (prevents pkey collisions if
+  -- historical imports/backfills inserted explicit ids).
+  PERFORM setval(
+    pg_get_serial_sequence('public.inventorydata', 'id'),
+    COALESCE((SELECT MAX(id) FROM public.inventorydata), 1)
+  );
+
   -- Step 1: delete existing inventorydata rows for selected dealers on p_date.
   DELETE FROM public.inventorydata i
   USING public.clients c
