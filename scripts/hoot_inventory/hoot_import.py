@@ -18,9 +18,9 @@ Optional:
   HOOT_HTTP_USER_AGENT=...   Override User-Agent (default: browser-like; avoids some 401s from urllib)
 
 Usage:
-  python hoot_inventory_import.py
-  python hoot_inventory_import.py --client-id 43
-  python hoot_inventory_import.py --dry-run
+  python hoot_import.py
+  python hoot_import.py --client-id 43
+  python hoot_import.py --dry-run
 """
 
 from __future__ import annotations

@@ -78,4 +78,5 @@ jobs:
               ARGS="$ARGS --client-id $CID"
             fi
           fi
-          python scripts/hoot_inventory/hoot_inventory_import.py $ARGS
+          python scripts/hoot_inventory/hoot_import.py $ARGS
+
