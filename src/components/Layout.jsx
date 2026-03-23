@@ -106,6 +106,7 @@ const Layout = ({ children }) => {
     '/profile': 'User Profile',
     '/users': 'User Management',
     '/clients': 'Client Master',
+    '/client-inventory-sources': 'Client inventory sources',
     '/roles': 'Role Management',
     '/inventory': 'Inventory Management',
     '/inventory-report': 'Inventory Report',

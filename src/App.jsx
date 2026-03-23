@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Clients from './pages/Clients';
+import ClientInventorySources from './pages/ClientInventorySources';
 import Roles from './pages/Roles';
 import Inventory from './pages/Inventory';
 import InventoryReport from './pages/InventoryReport';
@@ -99,6 +100,16 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <Clients />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/client-inventory-sources"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <ClientInventorySources />
                 </Layout>
               </PrivateRoute>
             }

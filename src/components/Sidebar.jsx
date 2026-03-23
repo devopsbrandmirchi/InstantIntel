@@ -210,6 +210,19 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
               <span className="nav-text font-medium">Client Master</span>
             </Link>
           </li>
+          <li>
+            <Link
+              to="/client-inventory-sources"
+              onClick={handleNavClick}
+              className={`nav-link nav-link-top-level flex items-center px-4 py-2 text-white/90 hover:bg-white/10 hover:text-white rounded-md border-l-[3px] border-transparent ${
+                isActive('/client-inventory-sources') ? 'active' : ''
+              }`}
+              data-page="client-inventory-sources"
+            >
+              <i className="fas fa-database mr-3 text-emerald-300/90"></i>
+              <span className="nav-text">Inventory sources</span>
+            </Link>
+          </li>
 
           {/* User Profile, User Management, Roles, Inventory */}
           {bottomNavItems.map((item) => (
