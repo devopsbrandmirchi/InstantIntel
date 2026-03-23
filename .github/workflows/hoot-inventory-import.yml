@@ -2,11 +2,11 @@
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   SUPABASE_URL                 Project URL (https://xxxx.supabase.co)
-#   SUPABASE_SERVICE_ROLE_KEY    Service role key (never use anon key — anon cannot read clients if RLS blocks it)
+#   SUPABASE_SERVICE_ROLE_KEY    Secret key sb_secret_... OR legacy service_role JWT (never anon / publishable)
 #
 # Data: each row in public.clients needs inventory_api = full Hoot CSV URL or the job imports 0 rows.
 #
-# Optional repository variables (Settings → Variables → Actions):
+# Optional repository variables/secrets (Settings → Secrets and variables → Actions):
 #   HOOT_ACTIVE_PULL_ONLY        Set to 1 to only process clients with active_pull and not scrap_feed
 #   HOOT_CHUNK_SIZE              Rows per upsert batch (default 300)
 
@@ -56,14 +56,15 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          HOOT_ACTIVE_PULL_ONLY: ${{ vars.HOOT_ACTIVE_PULL_ONLY }}
-          HOOT_CHUNK_SIZE: ${{ vars.HOOT_CHUNK_SIZE }}
+          HOOT_ACTIVE_PULL_ONLY: ${{ secrets.HOOT_ACTIVE_PULL_ONLY || vars.HOOT_ACTIVE_PULL_ONLY }}
+          HOOT_CHUNK_SIZE: ${{ secrets.HOOT_CHUNK_SIZE || vars.HOOT_CHUNK_SIZE }}
         run: |
           set -e
           if [ -z "${SUPABASE_URL}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY}" ]; then
             echo "::error::Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secrets."
             exit 1
           fi
+          echo "HOOT_ACTIVE_PULL_ONLY=${HOOT_ACTIVE_PULL_ONLY:-<empty>}"
           ARGS=""
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ "${{ inputs.dry_run }}" = "true" ]; then

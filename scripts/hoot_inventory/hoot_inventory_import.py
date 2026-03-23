@@ -5,7 +5,10 @@ custom-type / lookup rules as the Django job, upsert into public.hoot_inventory.
 
 Environment:
   SUPABASE_URL                 Project URL (https://xxx.supabase.co)
-  SUPABASE_SERVICE_ROLE_KEY    Service role key (bypasses RLS; required for inserts)
+  SUPABASE_SERVICE_ROLE_KEY    Elevated key for server jobs — either:
+                               - New: Secret key `sb_secret_...` (API Keys → Secret keys), or
+                               - Legacy: `service_role` JWT (`eyJ...`, Legacy API keys tab).
+                               Do not use anon / publishable keys here.
 
 Optional:
   HOOT_ACTIVE_PULL_ONLY=1      Only clients with active_pull=true and scrap_feed=false
@@ -47,6 +50,16 @@ def supabase_jwt_role(api_key: str) -> Optional[str]:
         return payload.get("role")
     except Exception:
         return None
+
+
+def is_supabase_secret_key(api_key: str) -> bool:
+    """New platform secret key (elevated; bypasses RLS) — not a JWT."""
+    return api_key.strip().startswith("sb_secret_")
+
+
+def is_supabase_publishable_key(api_key: str) -> bool:
+    """Low-privilege browser key — wrong for this script."""
+    return api_key.strip().startswith("sb_publishable_")
 
 
 # ---------------------------------------------------------------------------
@@ -562,22 +575,35 @@ def main() -> None:
         print("Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY", file=sys.stderr)
         sys.exit(1)
 
+    if is_supabase_publishable_key(key):
+        print(
+            "\n*** Wrong key: this looks like a PUBLISHABLE key (sb_publishable_...). "
+            "Use the Secret key (sb_secret_...) or legacy service_role JWT. ***\n",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     jwt_role = supabase_jwt_role(key)
-    if jwt_role:
+    if is_supabase_secret_key(key):
+        print("API key: Supabase secret key (sb_secret_...) — elevated access (OK for CI / imports).")
+    elif jwt_role == "service_role":
+        print("API key: legacy JWT role service_role (OK for CI / imports).")
+    elif jwt_role:
         print(f"API key JWT role: {jwt_role}")
+
     if jwt_role == "anon":
         print(
             "\n*** Wrong key: this is the ANON (public) API key. "
             "Row Level Security hides public.clients, so 0 rows are returned. ***\n"
-            "Fix: Supabase Dashboard → Project Settings → API → copy **service_role** "
-            "(secret) into GitHub Actions secret SUPABASE_SERVICE_ROLE_KEY.\n"
+            "Fix: Dashboard → Settings → API Keys → copy a **Secret** key (sb_secret_...) "
+            "or Legacy tab **service_role** (eyJ...) into SUPABASE_SERVICE_ROLE_KEY.\n"
             "SQL Editor uses the database role `postgres`, which bypasses RLS — that is why SQL still shows data.\n",
             file=sys.stderr,
         )
         sys.exit(1)
-    if jwt_role and jwt_role != "service_role":
+    if jwt_role and jwt_role not in ("service_role",) and not is_supabase_secret_key(key):
         print(
-            f"Warning: expected JWT role 'service_role' for server imports; got '{jwt_role}'.",
+            f"Warning: unexpected JWT role '{jwt_role}' for server imports.",
             file=sys.stderr,
         )
 
