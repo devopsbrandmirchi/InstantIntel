@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
+import { recordLoginHistory } from '../lib/loginHistory';
 
 const AuthContext = createContext(null);
 
@@ -161,6 +162,8 @@ export const AuthProvider = ({ children }) => {
 
       if (data?.user && data?.session) {
         await setUserWithRole(data.user, data.session);
+        // Best-effort login audit log: never block login success.
+        recordLoginHistory({ userId: data.user.id, email: data.user.email }).catch(() => {});
         return { success: true };
       }
 

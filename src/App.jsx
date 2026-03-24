@@ -18,6 +18,7 @@ import NormalizedInventoryScrapStats from './pages/NormalizedInventoryScrapStats
 import UserManagement from './pages/UserManagement';
 import AppLoadingScreen from './components/AppLoadingScreen';
 import SendgridEventStats from './pages/SendgridEventStats';
+import LoginHistory from './pages/LoginHistory';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -201,6 +202,16 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <UserManagement />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/login-history"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <LoginHistory />
                 </Layout>
               </PrivateRoute>
             }
