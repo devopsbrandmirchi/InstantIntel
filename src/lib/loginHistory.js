@@ -37,6 +37,7 @@ export async function recordLoginHistory({ userId, email }) {
   try {
     // IP is captured server-side from request headers in RPC.
     await supabase.rpc('log_login_history', {
+      p_ip_address: geo?.ip || null,
       p_email: email || '',
       p_city: geo?.city || null,
       p_region: geo?.region || null,
