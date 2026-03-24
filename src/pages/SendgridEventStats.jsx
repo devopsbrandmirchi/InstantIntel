@@ -177,6 +177,15 @@ const SendgridEventStats = () => {
           </div>
           <button
             type="button"
+            onClick={loadRows}
+            disabled={loading}
+            className="px-3 py-2 text-sm rounded bg-slate-600 text-white hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <i className={`fas ${loading ? 'fa-spinner fa-spin' : 'fa-sync-alt'}`} />
+            Refresh
+          </button>
+          <button
+            type="button"
             onClick={downloadCsv}
             disabled={filteredRows.length === 0}
             className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
