@@ -34,27 +34,23 @@ export async function recordLoginHistory({ userId, email }) {
   const geo = await fetchGeoData();
   const security = geo?.security || {};
 
-  const payload = {
-    user_id: userId,
-    email: email || '',
-    ip_address: geo?.ip || null,
-    city: geo?.city || null,
-    region: geo?.region || null,
-    country: geo?.country || null,
-    timezone: geo?.timezone?.id || geo?.timezone || null,
-    isp: geo?.connection?.isp || geo?.isp || null,
-    is_vpn: typeof security.vpn === 'boolean' ? security.vpn : null,
-    is_proxy: typeof security.proxy === 'boolean' ? security.proxy : null,
-    is_tor: typeof security.tor === 'boolean' ? security.tor : null,
-    user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-    platform: safeNavigatorValue('platform', ''),
-    browser_language: safeNavigatorValue('language', ''),
-    login_source: 'web',
-  };
-
-  // Non-blocking behavior at caller; errors are swallowed here.
   try {
-    await supabase.from('login_history').insert(payload);
+    // IP is captured server-side from request headers in RPC.
+    await supabase.rpc('log_login_history', {
+      p_email: email || '',
+      p_city: geo?.city || null,
+      p_region: geo?.region || null,
+      p_country: geo?.country || null,
+      p_timezone: geo?.timezone?.id || geo?.timezone || null,
+      p_isp: geo?.connection?.isp || geo?.isp || null,
+      p_is_vpn: typeof security.vpn === 'boolean' ? security.vpn : null,
+      p_is_proxy: typeof security.proxy === 'boolean' ? security.proxy : null,
+      p_is_tor: typeof security.tor === 'boolean' ? security.tor : null,
+      p_user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      p_platform: safeNavigatorValue('platform', ''),
+      p_browser_language: safeNavigatorValue('language', ''),
+      p_login_source: 'web',
+    });
   } catch (_) {
     // ignore logging errors so user login is never blocked
   }
