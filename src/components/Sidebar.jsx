@@ -40,11 +40,11 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
 
   return (
     <div
-      className={`sidebar sidebar-themed w-64 flex-shrink-0 transition-all duration-300 ${collapsed && isDesktop ? 'collapsed' : ''} ${!isDesktop && mobileOpen ? 'sidebar-mobile-open' : ''}`}
+      className={`sidebar sidebar-themed w-64 flex-shrink-0 flex flex-col min-h-0 transition-all duration-300 ${collapsed && isDesktop ? 'collapsed' : ''} ${!isDesktop && mobileOpen ? 'sidebar-mobile-open' : ''}`}
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="p-4 border-b border-white/10 sidebar-header">
+      <div className="p-4 border-b border-white/10 sidebar-header flex-shrink-0">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-white">
             <i className="fas fa-building mr-2 text-amber-400/90"></i>
@@ -68,8 +68,8 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
           </div>
         </div>
       </div>
-      <nav className="mt-4">
-        <ul className="space-y-2">
+      <nav className="mt-4 flex-1 min-h-0 overflow-y-auto overscroll-y-contain pb-6" aria-label="Sidebar links">
+        <ul className="space-y-2 pb-2">
           {/* 1. Dashboard */}
           <li>
             <Link
