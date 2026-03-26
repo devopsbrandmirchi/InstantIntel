@@ -20,6 +20,7 @@ import HootInventoryStats from './pages/HootInventoryStats';
 import UserManagement from './pages/UserManagement';
 import AppLoadingScreen from './components/AppLoadingScreen';
 import SendgridEventStats from './pages/SendgridEventStats';
+import SendgridAutonameEventStats from './pages/SendgridAutonameEventStats';
 import LoginHistory from './pages/LoginHistory';
 
 const PrivateRoute = ({ children }) => {
@@ -214,6 +215,16 @@ function App() {
               <PrivateRoute>
                 <Layout>
                   <SendgridEventStats />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/sendgrid-autoname-event-stats"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <SendgridAutonameEventStats />
                 </Layout>
               </PrivateRoute>
             }

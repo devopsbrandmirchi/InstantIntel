@@ -258,6 +258,19 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
               <span className="nav-text">SendGrid event stats</span>
             </Link>
           </li>
+          <li>
+            <Link
+              to="/sendgrid-autoname-event-stats"
+              onClick={handleNavClick}
+              className={`nav-link nav-link-top-level flex items-center px-4 py-2 text-white/90 hover:bg-white/10 hover:text-white rounded-md border-l-[3px] border-transparent ${
+                isActive('/sendgrid-autoname-event-stats') ? 'active' : ''
+              }`}
+              data-page="sendgrid-autoname-event-stats"
+            >
+              <i className="fas fa-envelope mr-3 text-fuchsia-300/90"></i>
+              <span className="nav-text">SendGrid autoname stats</span>
+            </Link>
+          </li>
 
           {/* User Profile, User Management, Roles, Inventory */}
           {bottomNavItems.map((item) => (
