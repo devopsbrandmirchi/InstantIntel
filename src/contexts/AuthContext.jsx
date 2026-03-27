@@ -51,19 +51,41 @@ const SESSION_LOAD_TIMEOUT_MS = 25000;
 
 const ROLE_RPC_TIMEOUT_MS = 8000;
 
-const ROLE_FETCH_OUTER_ATTEMPTS = 4;
-const ROLE_FETCH_BACKOFF_MS = 400;
+/** First paint / login: short waits so "Verifying access" does not block for tens of seconds. */
+const ROLE_FETCH_INITIAL = {
+  maxOuterAttempts: 2,
+  rpcTimeoutMs: 4500,
+  tableFallbackRetries: 1,
+  tableQueryTimeoutMs: 6500,
+  backoffMs: 150
+};
+
+/** Session refresh: a bit more patience, still bounded. */
+const ROLE_FETCH_REFRESH = {
+  maxOuterAttempts: 3,
+  rpcTimeoutMs: 7000,
+  tableFallbackRetries: 2,
+  tableQueryTimeoutMs: 10000,
+  backoffMs: 350
+};
+
+/** Hard cap for initial session role resolution (then metadata + prior role apply). */
+const INITIAL_ROLE_TOTAL_BUDGET_MS = 11000;
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /** Single attempt: RPC first, then table-query fallback (with inner retries). */
-async function fetchUserRoleFromDbOnce(userId, tableFallbackRetries = 2) {
+async function fetchUserRoleFromDbOnce(userId, opts = {}) {
+  const rpcTimeout = opts.rpcTimeoutMs ?? ROLE_RPC_TIMEOUT_MS;
+  const tableTimeout = opts.tableQueryTimeoutMs ?? 12000;
+  const tableFallbackRetries = opts.tableFallbackRetries ?? 2;
+
   try {
     const { data: roleName, error } = await withTimeout(
       supabase.rpc('get_my_role'),
-      ROLE_RPC_TIMEOUT_MS,
+      rpcTimeout,
       'Role fetch timeout'
     );
     if (!error && roleName != null && String(roleName).trim()) return String(roleName).toLowerCase();
@@ -71,12 +93,11 @@ async function fetchUserRoleFromDbOnce(userId, tableFallbackRetries = 2) {
     console.warn('get_my_role RPC failed, trying table query:', err?.message);
   }
 
-  const timeout = 12000;
   for (let attempt = 1; attempt <= tableFallbackRetries; attempt++) {
     try {
       const { data: urData, error: urError } = await withTimeout(
         supabase.from('user_roles').select('role_id').eq('user_id', userId),
-        timeout,
+        tableTimeout,
         'Role fetch timeout'
       );
       if (urError || !urData?.length) return null;
@@ -84,7 +105,7 @@ async function fetchUserRoleFromDbOnce(userId, tableFallbackRetries = 2) {
       if (roleIds.length === 0) return null;
       const { data: rolesData, error: rolesError } = await withTimeout(
         supabase.from('roles').select('id, name').in('id', roleIds),
-        timeout,
+        tableTimeout,
         'Roles fetch timeout'
       );
       if (rolesError || !rolesData?.length) return null;
@@ -102,24 +123,32 @@ async function fetchUserRoleFromDbOnce(userId, tableFallbackRetries = 2) {
 }
 
 /** Prefer RPC get_my_role(); retry whole flow on transient failures. */
-async function fetchUserRoleFromDb(userId) {
-  for (let attempt = 1; attempt <= ROLE_FETCH_OUTER_ATTEMPTS; attempt++) {
-    const role = await fetchUserRoleFromDbOnce(userId);
+async function fetchUserRoleFromDb(userId, strategyOpts = {}) {
+  const maxAttempts = strategyOpts.maxOuterAttempts ?? 3;
+  const backoffBase = strategyOpts.backoffMs ?? 350;
+  const onceOpts = {
+    rpcTimeoutMs: strategyOpts.rpcTimeoutMs,
+    tableFallbackRetries: strategyOpts.tableFallbackRetries,
+    tableQueryTimeoutMs: strategyOpts.tableQueryTimeoutMs
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const role = await fetchUserRoleFromDbOnce(userId, onceOpts);
     if (role != null) return role;
-    if (attempt < ROLE_FETCH_OUTER_ATTEMPTS) {
-      const wait = ROLE_FETCH_BACKOFF_MS * Math.pow(2, attempt - 1);
-      console.warn(`Role fetch attempt ${attempt}/${ROLE_FETCH_OUTER_ATTEMPTS} returned no role; retrying in ${wait}ms`);
+    if (attempt < maxAttempts) {
+      const wait = backoffBase * Math.pow(2, attempt - 1);
+      console.warn(`Role fetch attempt ${attempt}/${maxAttempts} returned no role; retrying in ${wait}ms`);
       await delay(wait);
     }
   }
   return null;
 }
 
-async function fetchAssignedClientIds(userId) {
+async function fetchAssignedClientIds(userId, timeoutMs = 10000) {
   try {
     const { data, error } = await withTimeout(
       supabase.from('profiles').select('clients').eq('id', userId).single(),
-      10000,
+      timeoutMs,
       'Assigned clients fetch timeout'
     );
     if (error) return [];
@@ -139,22 +168,35 @@ export const AuthProvider = ({ children }) => {
   /** After first successful session hydrate, later auth refreshes show "Reconnecting…". */
   const sessionEstablishedRef = useRef(false);
 
-  const setUserWithRole = async (supabaseUser, session) => {
+  const setUserWithRole = async (supabaseUser, session, { isInitialLoad = false } = {}) => {
     const showReconnecting = sessionEstablishedRef.current && !!supabaseUser;
     if (showReconnecting) setReconnecting(true);
     try {
       const baseUser = mapSupabaseUser(supabaseUser, session);
       let roleFromDb = null;
       let assignedClientIds = [];
+      const roleOpts = isInitialLoad ? ROLE_FETCH_INITIAL : ROLE_FETCH_REFRESH;
+      const profileTimeoutMs = isInitialLoad ? 6000 : 10000;
+
       try {
-        roleFromDb = await fetchUserRoleFromDb(supabaseUser.id);
+        const rolePromise = fetchUserRoleFromDb(supabaseUser.id, roleOpts).catch((err) => {
+          console.warn('Role fetch failed:', err?.message);
+          return null;
+        });
+        const clientsPromise = fetchAssignedClientIds(supabaseUser.id, profileTimeoutMs);
+
+        if (isInitialLoad) {
+          const [r, c] = await Promise.all([
+            Promise.race([rolePromise, delay(INITIAL_ROLE_TOTAL_BUDGET_MS).then(() => null)]),
+            clientsPromise
+          ]);
+          roleFromDb = r;
+          assignedClientIds = c;
+        } else {
+          [roleFromDb, assignedClientIds] = await Promise.all([rolePromise, clientsPromise]);
+        }
       } catch (err) {
-        console.warn('Role fetch failed or timed out, using fallback:', err?.message);
-      }
-      try {
-        assignedClientIds = await fetchAssignedClientIds(supabaseUser.id);
-      } catch (err) {
-        console.warn('Assigned clients fetch failed, using empty list:', err?.message);
+        console.warn('Role or profile fetch failed:', err?.message);
       }
       setCurrentUser((prev) => {
         const previousRoleForSameUser =
@@ -180,7 +222,7 @@ export const AuthProvider = ({ children }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (cancelled) return;
         if (session?.user) {
-          await setUserWithRole(session.user, session);
+          await setUserWithRole(session.user, session, { isInitialLoad: true });
           if (!cancelled) setConnectionError(null);
         } else {
           setCurrentUser(null);
@@ -207,7 +249,7 @@ export const AuthProvider = ({ children }) => {
       if (cancelled) return;
       try {
         if (session?.user) {
-          await setUserWithRole(session.user, session);
+          await setUserWithRole(session.user, session, { isInitialLoad: false });
           if (!cancelled) setConnectionError(null);
         } else {
           setCurrentUser(null);
@@ -238,7 +280,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data?.user && data?.session) {
-        await setUserWithRole(data.user, data.session);
+        await setUserWithRole(data.user, data.session, { isInitialLoad: true });
         // Best-effort login audit log: never block login success.
         recordLoginHistory({ userId: data.user.id, email: data.user.email }).catch(() => {});
         return { success: true };
@@ -302,7 +344,7 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw new Error(error.message);
       if (data?.user && data?.session) {
-        await setUserWithRole(data.user, data.session);
+        await setUserWithRole(data.user, data.session, { isInitialLoad: false });
         return { success: true };
       }
       throw new Error('Update failed.');
