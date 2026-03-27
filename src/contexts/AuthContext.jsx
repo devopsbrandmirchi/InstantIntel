@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
 import { recordLoginHistory } from '../lib/loginHistory';
@@ -51,9 +51,15 @@ const SESSION_LOAD_TIMEOUT_MS = 25000;
 
 const ROLE_RPC_TIMEOUT_MS = 8000;
 
-/** Prefer RPC get_my_role() to avoid RLS timeout; fallback to table queries. */
-async function fetchUserRoleFromDb(userId, retries = 2) {
-  // Prefer one-shot RPC (bypasses RLS, no timeout from policy evaluation)
+const ROLE_FETCH_OUTER_ATTEMPTS = 4;
+const ROLE_FETCH_BACKOFF_MS = 400;
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Single attempt: RPC first, then table-query fallback (with inner retries). */
+async function fetchUserRoleFromDbOnce(userId, tableFallbackRetries = 2) {
   try {
     const { data: roleName, error } = await withTimeout(
       supabase.rpc('get_my_role'),
@@ -65,9 +71,8 @@ async function fetchUserRoleFromDb(userId, retries = 2) {
     console.warn('get_my_role RPC failed, trying table query:', err?.message);
   }
 
-  // Fallback: direct table queries (can hit RLS timeout if policies are slow)
   const timeout = 12000;
-  for (let attempt = 1; attempt <= retries; attempt++) {
+  for (let attempt = 1; attempt <= tableFallbackRetries; attempt++) {
     try {
       const { data: urData, error: urError } = await withTimeout(
         supabase.from('user_roles').select('role_id').eq('user_id', userId),
@@ -87,10 +92,24 @@ async function fetchUserRoleFromDb(userId, retries = 2) {
       if (roleNames.some((n) => String(n).toLowerCase() === 'admin')) return 'admin';
       return roleNames[0] ? String(roleNames[0]).toLowerCase() : null;
     } catch (err) {
-      if (attempt === retries) {
+      if (attempt === tableFallbackRetries) {
         console.warn('Could not fetch user role:', err?.message);
         return null;
       }
+    }
+  }
+  return null;
+}
+
+/** Prefer RPC get_my_role(); retry whole flow on transient failures. */
+async function fetchUserRoleFromDb(userId) {
+  for (let attempt = 1; attempt <= ROLE_FETCH_OUTER_ATTEMPTS; attempt++) {
+    const role = await fetchUserRoleFromDbOnce(userId);
+    if (role != null) return role;
+    if (attempt < ROLE_FETCH_OUTER_ATTEMPTS) {
+      const wait = ROLE_FETCH_BACKOFF_MS * Math.pow(2, attempt - 1);
+      console.warn(`Role fetch attempt ${attempt}/${ROLE_FETCH_OUTER_ATTEMPTS} returned no role; retrying in ${wait}ms`);
+      await delay(wait);
     }
   }
   return null;
@@ -115,34 +134,42 @@ const CONNECTION_ERROR_MESSAGE = 'Unable to connect. Please check your network a
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [reconnecting, setReconnecting] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
+  /** After first successful session hydrate, later auth refreshes show "Reconnecting…". */
+  const sessionEstablishedRef = useRef(false);
 
   const setUserWithRole = async (supabaseUser, session) => {
-    const baseUser = mapSupabaseUser(supabaseUser, session);
-    let roleFromDb = null;
-    let assignedClientIds = [];
+    const showReconnecting = sessionEstablishedRef.current && !!supabaseUser;
+    if (showReconnecting) setReconnecting(true);
     try {
-      roleFromDb = await fetchUserRoleFromDb(supabaseUser.id);
-    } catch (err) {
-      console.warn('Role fetch failed or timed out, using fallback:', err?.message);
+      const baseUser = mapSupabaseUser(supabaseUser, session);
+      let roleFromDb = null;
+      let assignedClientIds = [];
+      try {
+        roleFromDb = await fetchUserRoleFromDb(supabaseUser.id);
+      } catch (err) {
+        console.warn('Role fetch failed or timed out, using fallback:', err?.message);
+      }
+      try {
+        assignedClientIds = await fetchAssignedClientIds(supabaseUser.id);
+      } catch (err) {
+        console.warn('Assigned clients fetch failed, using empty list:', err?.message);
+      }
+      setCurrentUser((prev) => {
+        const previousRoleForSameUser =
+          prev?.id === supabaseUser.id && prev?.role ? String(prev.role).toLowerCase() : null;
+        const role = (roleFromDb || previousRoleForSameUser || baseUser.role || '').toLowerCase() || 'viewer';
+        return {
+          ...baseUser,
+          role,
+          assignedClientIds
+        };
+      });
+      sessionEstablishedRef.current = true;
+    } finally {
+      if (showReconnecting) setReconnecting(false);
     }
-    try {
-      assignedClientIds = await fetchAssignedClientIds(supabaseUser.id);
-    } catch (err) {
-      console.warn('Assigned clients fetch failed, using empty list:', err?.message);
-    }
-    // Keep previous role for the same user if role lookup temporarily fails
-    // (prevents accidental demotion/redirect loops on transient DB/network timeouts).
-    const previousRoleForSameUser =
-      currentUser?.id === supabaseUser.id && currentUser?.role
-        ? String(currentUser.role).toLowerCase()
-        : null;
-    const role = (roleFromDb || previousRoleForSameUser || baseUser.role || '').toLowerCase() || 'viewer';
-    setCurrentUser({
-      ...baseUser,
-      role,
-      assignedClientIds
-    });
   };
 
   useEffect(() => {
@@ -157,12 +184,14 @@ export const AuthProvider = ({ children }) => {
           if (!cancelled) setConnectionError(null);
         } else {
           setCurrentUser(null);
+          sessionEstablishedRef.current = false;
           if (!cancelled) setConnectionError(null);
         }
       } catch (err) {
         console.warn('Auth initial load failed:', err?.message);
         if (!cancelled) {
           setCurrentUser(null);
+          sessionEstablishedRef.current = false;
           setConnectionError(err?.message || CONNECTION_ERROR_MESSAGE);
         }
       } finally {
@@ -182,6 +211,7 @@ export const AuthProvider = ({ children }) => {
           if (!cancelled) setConnectionError(null);
         } else {
           setCurrentUser(null);
+          sessionEstablishedRef.current = false;
           if (!cancelled) setConnectionError(null);
         }
       } finally {
@@ -286,6 +316,8 @@ export const AuthProvider = ({ children }) => {
   /** Clear session in UI immediately; sign out on server in background (signOut can hang on bad network). */
   const logout = () => {
     setCurrentUser(null);
+    sessionEstablishedRef.current = false;
+    setReconnecting(false);
     setConnectionError(null);
     (async () => {
       try {
@@ -314,6 +346,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     getAuthToken,
     loading,
+    reconnecting,
     supabase,
     connectionError,
     clearConnectionError
