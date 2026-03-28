@@ -191,11 +191,12 @@ const ScraperControl = () => {
       </div>
 
       <p className="text-xs text-slate-400 mt-4">
-        Requires Vercel env <code className="bg-slate-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code>,{' '}
-        <code className="bg-slate-100 px-1 rounded">SCRAPER_BRIDGE_URL</code>, and{' '}
-        <code className="bg-slate-100 px-1 rounded">SCRAPER_BRIDGE_SECRET</code>. Local Vite dev: use{' '}
-        <code className="bg-slate-100 px-1 rounded">vercel dev</code> or proxy <code className="bg-slate-100 px-1 rounded">/api</code>{' '}
-        to your deployment.
+        API auth: uses your existing <code className="bg-slate-100 px-1 rounded">VITE_SUPABASE_*</code> keys on Vercel plus{' '}
+        <code className="bg-slate-100 px-1 rounded">get_my_role</code>, or set{' '}
+        <code className="bg-slate-100 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code> instead. Bridge:{' '}
+        <code className="bg-slate-100 px-1 rounded">SCRAPER_BRIDGE_URL</code> and{' '}
+        <code className="bg-slate-100 px-1 rounded">SCRAPER_BRIDGE_SECRET</code>. Local:{' '}
+        <code className="bg-slate-100 px-1 rounded">vercel dev</code>.
       </p>
     </div>
   );
