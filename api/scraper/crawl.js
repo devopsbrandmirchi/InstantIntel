@@ -39,8 +39,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const base = (process.env.SCRAPER_BRIDGE_URL || '').replace(/\/$/, '');
-  const secret = process.env.SCRAPER_BRIDGE_SECRET;
+  const base = (process.env.SCRAPER_BRIDGE_URL || '').trim().replace(/\/$/, '');
+  const secret = (process.env.SCRAPER_BRIDGE_SECRET || '').trim();
   if (!base || !secret) {
     return res.status(503).json({
       error:
