@@ -26,7 +26,7 @@ const Layout = ({ children }) => {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
   const headerRef = useRef(null);
-  const { currentUser, logout, connectionError, clearConnectionError, reconnecting } = useAuth();
+  const { currentUser, logout, connectionError, clearConnectionError } = useAuth();
   const navigate = useNavigate();
 
   const avatarInitials = useMemo(() => {
@@ -113,7 +113,8 @@ const Layout = ({ children }) => {
     '/sales-report': 'Sales Report',
     '/inventory-daily-count': 'Daily Inventory Count',
     '/scrap-feed-stats': 'Scrap feed statistics',
-    '/normalized-scrap-stats': 'Normalized scrap inventory stats'
+    '/normalized-scrap-stats': 'Normalized scrap inventory stats',
+    '/scraper-control': 'Run Scrapy spider'
   };
 
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
@@ -263,19 +264,6 @@ const Layout = ({ children }) => {
             </div>
           </div>
         </header>
-        {reconnecting && (
-          <div
-            className="flex-shrink-0 px-3 py-2 sm:px-4 bg-sky-50 border-b border-sky-200 flex items-center gap-2"
-            role="status"
-            aria-live="polite"
-          >
-            <div
-              className="h-4 w-4 rounded-full border-2 border-sky-300 border-t-sky-600 animate-spin flex-shrink-0"
-              aria-hidden="true"
-            />
-            <span className="text-sm text-sky-900">Reconnecting…</span>
-          </div>
-        )}
         {connectionError && (
           <div className="flex-shrink-0 px-3 py-2 sm:px-4 bg-amber-50 border-b border-amber-200 flex items-center justify-between gap-2" role="alert">
             <div className="flex items-center gap-2 min-w-0">

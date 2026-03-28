@@ -1,0 +1,28 @@
+# Systemd unit: bridge lives inside the Scrapy repo tree.
+#
+#   sudo cp scraper-bridge.service.example /etc/systemd/system/scraper-bridge.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now scraper-bridge
+#
+# /etc/scraper-bridge.env should contain only:
+#   SCRAPER_BRIDGE_SECRET=your-long-random-secret
+#   sudo chmod 600 /etc/scraper-bridge.env
+
+[Unit]
+Description=Instant Intel scraper HTTP bridge (dashboard triggers)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/root/scrappingproxy/scraper-bridge
+Environment=SCRAPY_PROJECT_DIR=/root/scrappingproxy
+Environment=SCRAPY_PYTHON=/root/scrappingproxy/.venv/bin/python
+EnvironmentFile=/root/scrappingproxy/.env
+EnvironmentFile=-/etc/scraper-bridge.env
+ExecStart=/root/scrappingproxy/scraper-bridge/.venv/bin/uvicorn main:app --host 0.0.0.0 --port 8787
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

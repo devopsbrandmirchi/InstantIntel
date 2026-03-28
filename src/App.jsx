@@ -24,6 +24,7 @@ import SendgridAutonameEventStats from './pages/SendgridAutonameEventStats';
 import LoginHistory from './pages/LoginHistory';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
 import AdminAccessDenied from './pages/AdminAccessDenied';
+import ScraperControl from './pages/ScraperControl';
 
 const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -36,12 +37,9 @@ const PrivateRoute = ({ children }) => {
 };
 
 const RoleRoute = ({ children, allowViewer = false }) => {
-  const { currentUser, loading, reconnecting } = useAuth();
+  const { currentUser, loading } = useAuth();
   if (loading) return <AppLoadingScreen message="Verifying access…" />;
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (reconnecting && !allowViewer) {
-    return <AppLoadingScreen message="Reconnecting…" />;
-  }
 
   const role = (currentUser.role || 'viewer').toLowerCase();
   if (role === 'admin') return children;
@@ -61,16 +59,13 @@ const GuestRoute = ({ children }) => {
 };
 
 const AdminRoute = ({ children }) => {
-  const { currentUser, loading, reconnecting } = useAuth();
+  const { currentUser, loading } = useAuth();
 
   if (loading) {
     return <AppLoadingScreen message="Verifying access…" />;
   }
 
   if (!currentUser) return <Navigate to="/login" replace />;
-  if (reconnecting) {
-    return <AppLoadingScreen message="Reconnecting…" />;
-  }
   if ((currentUser.role || '').toLowerCase() !== 'admin') return <Navigate to="/access-denied-admin" replace />;
   return children;
 };
@@ -275,6 +270,16 @@ function App() {
               <RoleRoute>
                 <Layout>
                   <LoginHistory />
+                </Layout>
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/scraper-control"
+            element={
+              <RoleRoute>
+                <Layout>
+                  <ScraperControl />
                 </Layout>
               </RoleRoute>
             }

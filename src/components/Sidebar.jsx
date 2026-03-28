@@ -3,7 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const REPORT_PATHS = ['/inventory-report', '/sales-report', '/inventory-daily-count', '/daily-sales-count'];
-const ADMIN_REPORT_PATHS = ['/scrap-feed-stats', '/normalized-scrap-stats', '/hoot-feed-stats'];
+const ADMIN_REPORT_PATHS = [
+  '/scrap-feed-stats',
+  '/normalized-scrap-stats',
+  '/hoot-feed-stats',
+  '/scraper-control'
+];
 
 const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) => {
   const location = useLocation();
@@ -213,6 +218,17 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                   >
                     <i className="fas fa-satellite-dish mr-3 text-sm"></i>
                     <span className="nav-text">Hoot feed stats</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/scraper-control"
+                    onClick={handleNavClick}
+                    className={submenuLinkClass('/scraper-control')}
+                    data-page="scraper-control"
+                  >
+                    <i className="fas fa-bug mr-3 text-sm" aria-hidden />
+                    <span className="nav-text">Run spider</span>
                   </Link>
                 </li>
               </ul>

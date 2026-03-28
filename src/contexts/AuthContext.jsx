@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
 import { recordLoginHistory } from '../lib/loginHistory';
@@ -20,7 +20,7 @@ function mapSupabaseUser(supabaseUser, session) {
     id: supabaseUser.id,
     email: supabaseUser.email ?? '',
     name: metadata.full_name || metadata.name || metadata.user_name || supabaseUser.email?.split('@')[0] || 'User',
-    role: metadata.role || 'viewer', // fallback; real role comes from user_roles table
+    role: metadata.role || 'viewer',
     token: session?.access_token ?? null,
     refreshToken: session?.refresh_token ?? null
   };
@@ -46,109 +46,52 @@ function normalizeClientIds(raw) {
   return [...new Set(arr.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0))];
 }
 
-const ROLE_FETCH_TIMEOUT_MS = 25000;
-const SESSION_LOAD_TIMEOUT_MS = 25000;
+/** One moderate attempt: RPC then table fallback once. Kept short so navigation stays responsive. */
+const ROLE_RPC_MS = 5000;
+const ROLE_TABLE_MS = 8000;
+const PROFILE_MS = 7000;
 
-const ROLE_RPC_TIMEOUT_MS = 8000;
-
-/** First paint / login: short waits so "Verifying access" does not block for tens of seconds. */
-const ROLE_FETCH_INITIAL = {
-  maxOuterAttempts: 2,
-  rpcTimeoutMs: 4500,
-  tableFallbackRetries: 1,
-  tableQueryTimeoutMs: 6500,
-  backoffMs: 150
-};
-
-/** Session refresh: a bit more patience, still bounded. */
-const ROLE_FETCH_REFRESH = {
-  maxOuterAttempts: 3,
-  rpcTimeoutMs: 7000,
-  tableFallbackRetries: 2,
-  tableQueryTimeoutMs: 10000,
-  backoffMs: 350
-};
-
-/** Hard cap for initial session role resolution (then metadata + prior role apply). */
-const INITIAL_ROLE_TOTAL_BUDGET_MS = 11000;
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Single attempt: RPC first, then table-query fallback (with inner retries). */
-async function fetchUserRoleFromDbOnce(userId, opts = {}) {
-  const rpcTimeout = opts.rpcTimeoutMs ?? ROLE_RPC_TIMEOUT_MS;
-  const tableTimeout = opts.tableQueryTimeoutMs ?? 12000;
-  const tableFallbackRetries = opts.tableFallbackRetries ?? 2;
-
+async function fetchUserRoleFromDb(userId) {
   try {
     const { data: roleName, error } = await withTimeout(
       supabase.rpc('get_my_role'),
-      rpcTimeout,
+      ROLE_RPC_MS,
       'Role fetch timeout'
     );
     if (!error && roleName != null && String(roleName).trim()) return String(roleName).toLowerCase();
   } catch (err) {
-    console.warn('get_my_role RPC failed, trying table query:', err?.message);
+    console.warn('get_my_role failed:', err?.message);
   }
 
-  for (let attempt = 1; attempt <= tableFallbackRetries; attempt++) {
-    try {
-      const { data: urData, error: urError } = await withTimeout(
-        supabase.from('user_roles').select('role_id').eq('user_id', userId),
-        tableTimeout,
-        'Role fetch timeout'
-      );
-      if (urError || !urData?.length) return null;
-      const roleIds = [...new Set(urData.map((r) => r.role_id).filter(Boolean))];
-      if (roleIds.length === 0) return null;
-      const { data: rolesData, error: rolesError } = await withTimeout(
-        supabase.from('roles').select('id, name').in('id', roleIds),
-        tableTimeout,
-        'Roles fetch timeout'
-      );
-      if (rolesError || !rolesData?.length) return null;
-      const roleNames = rolesData.map((r) => r.name).filter(Boolean);
-      if (roleNames.some((n) => String(n).toLowerCase() === 'admin')) return 'admin';
-      return roleNames[0] ? String(roleNames[0]).toLowerCase() : null;
-    } catch (err) {
-      if (attempt === tableFallbackRetries) {
-        console.warn('Could not fetch user role:', err?.message);
-        return null;
-      }
-    }
+  try {
+    const { data: urData, error: urError } = await withTimeout(
+      supabase.from('user_roles').select('role_id').eq('user_id', userId),
+      ROLE_TABLE_MS,
+      'Role fetch timeout'
+    );
+    if (urError || !urData?.length) return null;
+    const roleIds = [...new Set(urData.map((r) => r.role_id).filter(Boolean))];
+    if (roleIds.length === 0) return null;
+    const { data: rolesData, error: rolesError } = await withTimeout(
+      supabase.from('roles').select('id, name').in('id', roleIds),
+      ROLE_TABLE_MS,
+      'Roles fetch timeout'
+    );
+    if (rolesError || !rolesData?.length) return null;
+    const roleNames = rolesData.map((r) => r.name).filter(Boolean);
+    if (roleNames.some((n) => String(n).toLowerCase() === 'admin')) return 'admin';
+    return roleNames[0] ? String(roleNames[0]).toLowerCase() : null;
+  } catch (err) {
+    console.warn('Table role fetch failed:', err?.message);
+    return null;
   }
-  return null;
 }
 
-/** Prefer RPC get_my_role(); retry whole flow on transient failures. */
-async function fetchUserRoleFromDb(userId, strategyOpts = {}) {
-  const maxAttempts = strategyOpts.maxOuterAttempts ?? 3;
-  const backoffBase = strategyOpts.backoffMs ?? 350;
-  const onceOpts = {
-    rpcTimeoutMs: strategyOpts.rpcTimeoutMs,
-    tableFallbackRetries: strategyOpts.tableFallbackRetries,
-    tableQueryTimeoutMs: strategyOpts.tableQueryTimeoutMs
-  };
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const role = await fetchUserRoleFromDbOnce(userId, onceOpts);
-    if (role != null) return role;
-    if (attempt < maxAttempts) {
-      const wait = backoffBase * Math.pow(2, attempt - 1);
-      console.warn(`Role fetch attempt ${attempt}/${maxAttempts} returned no role; retrying in ${wait}ms`);
-      await delay(wait);
-    }
-  }
-  return null;
-}
-
-async function fetchAssignedClientIds(userId, timeoutMs = 10000) {
+async function fetchAssignedClientIds(userId) {
   try {
     const { data, error } = await withTimeout(
       supabase.from('profiles').select('clients').eq('id', userId).single(),
-      timeoutMs,
+      PROFILE_MS,
       'Assigned clients fetch timeout'
     );
     if (error) return [];
@@ -163,55 +106,45 @@ const CONNECTION_ERROR_MESSAGE = 'Unable to connect. Please check your network a
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [reconnecting, setReconnecting] = useState(false);
   const [connectionError, setConnectionError] = useState(null);
-  /** After first successful session hydrate, later auth refreshes show "Reconnecting…". */
-  const sessionEstablishedRef = useRef(false);
 
-  const setUserWithRole = async (supabaseUser, session, { isInitialLoad = false } = {}) => {
-    const showReconnecting = sessionEstablishedRef.current && !!supabaseUser;
-    if (showReconnecting) setReconnecting(true);
+  /** Full DB role + profile. Used on sign-in and explicit refresh only — not on token rotation. */
+  const hydrateUserFromSession = async (supabaseUser, session) => {
+    const baseUser = mapSupabaseUser(supabaseUser, session);
+    let roleFromDb = null;
+    let assignedClientIds = [];
     try {
-      const baseUser = mapSupabaseUser(supabaseUser, session);
-      let roleFromDb = null;
-      let assignedClientIds = [];
-      const roleOpts = isInitialLoad ? ROLE_FETCH_INITIAL : ROLE_FETCH_REFRESH;
-      const profileTimeoutMs = isInitialLoad ? 6000 : 10000;
-
-      try {
-        const rolePromise = fetchUserRoleFromDb(supabaseUser.id, roleOpts).catch((err) => {
-          console.warn('Role fetch failed:', err?.message);
-          return null;
-        });
-        const clientsPromise = fetchAssignedClientIds(supabaseUser.id, profileTimeoutMs);
-
-        if (isInitialLoad) {
-          const [r, c] = await Promise.all([
-            Promise.race([rolePromise, delay(INITIAL_ROLE_TOTAL_BUDGET_MS).then(() => null)]),
-            clientsPromise
-          ]);
-          roleFromDb = r;
-          assignedClientIds = c;
-        } else {
-          [roleFromDb, assignedClientIds] = await Promise.all([rolePromise, clientsPromise]);
-        }
-      } catch (err) {
-        console.warn('Role or profile fetch failed:', err?.message);
-      }
-      setCurrentUser((prev) => {
-        const previousRoleForSameUser =
-          prev?.id === supabaseUser.id && prev?.role ? String(prev.role).toLowerCase() : null;
-        const role = (roleFromDb || previousRoleForSameUser || baseUser.role || '').toLowerCase() || 'viewer';
-        return {
-          ...baseUser,
-          role,
-          assignedClientIds
-        };
-      });
-      sessionEstablishedRef.current = true;
-    } finally {
-      if (showReconnecting) setReconnecting(false);
+      [roleFromDb, assignedClientIds] = await Promise.all([
+        fetchUserRoleFromDb(supabaseUser.id),
+        fetchAssignedClientIds(supabaseUser.id)
+      ]);
+    } catch (err) {
+      console.warn('Role/profile load failed:', err?.message);
     }
+
+    setCurrentUser((prev) => {
+      const previousRole =
+        prev?.id === supabaseUser.id && prev?.role ? String(prev.role).toLowerCase() : null;
+      const role = (roleFromDb || previousRole || baseUser.role || '').toLowerCase() || 'viewer';
+      return {
+        ...baseUser,
+        role,
+        assignedClientIds
+      };
+    });
+  };
+
+  /** Token refresh: update JWT only — avoids re-querying role/clients on every link click / idle refresh. */
+  const patchSessionTokens = (session) => {
+    if (!session?.access_token) return;
+    setCurrentUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        token: session.access_token ?? null,
+        refreshToken: session.refresh_token ?? null
+      };
+    });
   };
 
   useEffect(() => {
@@ -219,21 +152,21 @@ export const AuthProvider = ({ children }) => {
 
     const initSession = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session }
+        } = await supabase.auth.getSession();
         if (cancelled) return;
         if (session?.user) {
-          await setUserWithRole(session.user, session, { isInitialLoad: true });
+          await hydrateUserFromSession(session.user, session);
           if (!cancelled) setConnectionError(null);
         } else {
           setCurrentUser(null);
-          sessionEstablishedRef.current = false;
           if (!cancelled) setConnectionError(null);
         }
       } catch (err) {
         console.warn('Auth initial load failed:', err?.message);
         if (!cancelled) {
           setCurrentUser(null);
-          sessionEstablishedRef.current = false;
           setConnectionError(err?.message || CONNECTION_ERROR_MESSAGE);
         }
       } finally {
@@ -245,19 +178,34 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
+
+      if (event === 'INITIAL_SESSION') {
+        /** `getSession` in initSession already hydrated; this event would duplicate work and cause flicker. */
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED' && session?.user) {
+        patchSessionTokens(session);
+        return;
+      }
+
+      if (event === 'SIGNED_OUT' || !session?.user) {
+        setCurrentUser(null);
+        setConnectionError(null);
+        setLoading(false);
+        return;
+      }
+
+      /** SIGNED_IN, USER_UPDATED, etc. — reload role from DB */
       try {
-        if (session?.user) {
-          await setUserWithRole(session.user, session, { isInitialLoad: false });
-          if (!cancelled) setConnectionError(null);
-        } else {
-          setCurrentUser(null);
-          sessionEstablishedRef.current = false;
-          if (!cancelled) setConnectionError(null);
-        }
+        await hydrateUserFromSession(session.user, session);
+        setConnectionError(null);
+      } catch (err) {
+        console.warn('Auth state hydrate failed:', err?.message);
       } finally {
-        if (!cancelled) setLoading(false);
+        setLoading(false);
       }
     });
 
@@ -280,8 +228,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data?.user && data?.session) {
-        await setUserWithRole(data.user, data.session, { isInitialLoad: true });
-        // Best-effort login audit log: never block login success.
+        await hydrateUserFromSession(data.user, data.session);
         recordLoginHistory({ userId: data.user.id, email: data.user.email }).catch(() => {});
         return { success: true };
       }
@@ -344,7 +291,7 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw new Error(error.message);
       if (data?.user && data?.session) {
-        await setUserWithRole(data.user, data.session, { isInitialLoad: false });
+        await hydrateUserFromSession(data.user, data.session);
         return { success: true };
       }
       throw new Error('Update failed.');
@@ -355,26 +302,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /** Clear session in UI immediately; sign out on server in background (signOut can hang on bad network). */
   const logout = () => {
     setCurrentUser(null);
-    sessionEstablishedRef.current = false;
-    setReconnecting(false);
     setConnectionError(null);
     (async () => {
       try {
-        await Promise.race([
-          supabase.auth.signOut(),
-          new Promise((resolve) => setTimeout(resolve, 6000))
-        ]);
+        await Promise.race([supabase.auth.signOut(), new Promise((resolve) => setTimeout(resolve, 6000))]);
       } catch (err) {
         console.error('Logout error:', err);
       }
       try {
         await supabase.auth.signOut({ scope: 'local' });
-      } catch (_) {
-        /* ensure local session cleared if global signOut hung */
-      }
+      } catch (_) {}
     })();
   };
 
@@ -388,7 +327,6 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     getAuthToken,
     loading,
-    reconnecting,
     supabase,
     connectionError,
     clearConnectionError
