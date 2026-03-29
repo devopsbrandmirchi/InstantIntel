@@ -110,6 +110,7 @@ const Layout = ({ children }) => {
     '/roles': 'Role Management',
     '/inventory': 'Inventory Management',
     '/inventory-report': 'Inventory Report',
+    '/inventory-comparison': 'Inventory comparison',
     '/sales-report': 'Sales Report',
     '/inventory-daily-count': 'Daily Inventory Count',
     '/scrap-feed-stats': 'Scrap feed statistics',

@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const REPORT_PATHS = ['/inventory-report', '/sales-report', '/inventory-daily-count', '/daily-sales-count'];
+const REPORT_PATHS = [
+  '/inventory-report',
+  '/inventory-comparison',
+  '/sales-report',
+  '/inventory-daily-count',
+  '/daily-sales-count'
+];
 const ADMIN_REPORT_PATHS = [
   '/scrap-feed-stats',
   '/normalized-scrap-stats',
@@ -39,7 +45,6 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
   };
 
   const bottomNavItems = [
-    { path: '/profile', icon: 'fas fa-user', label: 'User Profile', page: 'profile' },
     { path: '/users', icon: 'fas fa-user-cog', label: 'User Management', page: 'users' },
     { path: '/roles', icon: 'fas fa-user-tag', label: 'Roles', page: 'roles' },
     { path: '/inventory', icon: 'fas fa-boxes', label: 'Inventory', page: 'inventory' }
@@ -135,6 +140,17 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                 </li>
                 <li>
                   <Link
+                    to="/inventory-comparison"
+                    onClick={handleNavClick}
+                    className={submenuLinkClass('/inventory-comparison')}
+                    data-page="inventory-comparison"
+                  >
+                    <i className="fas fa-columns mr-3 text-sm"></i>
+                    <span className="nav-text">Inventory comparison</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
                     to="/sales-report"
                     onClick={handleNavClick}
                     className={submenuLinkClass('/sales-report')}
@@ -168,6 +184,20 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                 </li>
               </ul>
             </div>
+          </li>
+
+          <li>
+            <Link
+              to="/profile"
+              onClick={handleNavClick}
+              className={`nav-link nav-link-top-level flex items-center px-4 py-2 text-white/90 hover:bg-white/10 hover:text-white rounded-md border-l-[3px] border-transparent ${
+                isActive('/profile') ? 'active' : ''
+              }`}
+              data-page="profile"
+            >
+              <i className="fas fa-user mr-3"></i>
+              <span className="nav-text">User Profile</span>
+            </Link>
           </li>
 
           {/* 3. Scrapping Reports */}

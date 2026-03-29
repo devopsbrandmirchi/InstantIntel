@@ -11,6 +11,7 @@ import ClientInventorySources from './pages/ClientInventorySources';
 import Roles from './pages/Roles';
 import Inventory from './pages/Inventory';
 import InventoryReport from './pages/InventoryReport';
+import InventoryComparisonReport from './pages/InventoryComparisonReport';
 import SalesReport from './pages/SalesReport';
 import InventoryDailyCount from './pages/InventoryDailyCount';
 import DailySalesCount from './pages/DailySalesCount';
@@ -117,7 +118,7 @@ function App() {
           <Route
             path="/profile"
             element={
-              <RoleRoute>
+              <RoleRoute allowViewer>
                 <Layout>
                   <Profile />
                 </Layout>
@@ -170,6 +171,16 @@ function App() {
               <RoleRoute allowViewer>
                 <Layout>
                   <InventoryReport />
+                </Layout>
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/inventory-comparison"
+            element={
+              <RoleRoute allowViewer>
+                <Layout>
+                  <InventoryComparisonReport />
                 </Layout>
               </RoleRoute>
             }

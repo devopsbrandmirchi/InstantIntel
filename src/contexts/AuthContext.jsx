@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
 import { recordLoginHistory } from '../lib/loginHistory';
@@ -26,19 +26,34 @@ function mapSupabaseUser(supabaseUser, session) {
   };
 }
 
+/** Postgres bigint[] sometimes serializes as "{1,2,3}" over the wire. */
+function parsePostgresBigIntArrayString(raw) {
+  if (typeof raw !== 'string') return null;
+  const t = raw.trim();
+  if (!t.startsWith('{') || !t.endsWith('}')) return null;
+  const inner = t.slice(1, -1).trim();
+  if (!inner) return [];
+  return inner.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
 function normalizeClientIds(raw) {
   if (raw == null) return [];
   let arr = [];
   if (Array.isArray(raw)) arr = raw;
   else if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) arr = parsed;
-    } catch {
-      arr = raw
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+    const pgParts = parsePostgresBigIntArrayString(raw);
+    if (pgParts !== null) {
+      arr = pgParts;
+    } else {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) arr = parsed;
+      } catch {
+        arr = raw
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
     }
   } else if (typeof raw === 'object') {
     if (Array.isArray(raw.ids)) arr = raw.ids;
@@ -94,9 +109,13 @@ async function fetchAssignedClientIds(userId) {
       PROFILE_MS,
       'Assigned clients fetch timeout'
     );
-    if (error) return [];
+    if (error) {
+      console.warn('profiles.clients:', error.message || error.code || error);
+      return [];
+    }
     return normalizeClientIds(data?.clients);
-  } catch {
+  } catch (e) {
+    console.warn('fetchAssignedClientIds:', e?.message || e);
     return [];
   }
 }
@@ -133,6 +152,18 @@ export const AuthProvider = ({ children }) => {
       };
     });
   };
+
+  const hydrateRef = useRef(hydrateUserFromSession);
+  hydrateRef.current = hydrateUserFromSession;
+
+  /** Re-load role + assigned clients from DB (e.g. after admin updates your profile while you stay signed in). */
+  const refreshProfile = useCallback(async () => {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+    if (!session?.user) return;
+    await hydrateRef.current(session.user, session);
+  }, []);
 
   /** Token refresh: update JWT only — avoids re-querying role/clients on every link click / idle refresh. */
   const patchSessionTokens = (session) => {
@@ -280,14 +311,25 @@ export const AuthProvider = ({ children }) => {
 
   const updateProfile = async (updates) => {
     try {
-      const { full_name, name, phone } = updates;
+      const { full_name, name, phone, email } = updates;
       const dataToSet = {};
       if (full_name !== undefined) dataToSet.full_name = full_name;
       if (name !== undefined) dataToSet.name = name;
       if (full_name !== undefined && !dataToSet.name) dataToSet.name = full_name;
       if (phone !== undefined) dataToSet.phone = phone;
 
-      const { data, error } = await supabase.auth.updateUser({ data: dataToSet });
+      const payload = { data: dataToSet };
+      if (email !== undefined) {
+        const role = (currentUser?.role || '').toLowerCase();
+        if (role !== 'admin') {
+          throw new Error('Only administrators can change the account email.');
+        }
+        const trimmed = String(email).trim();
+        if (!trimmed) throw new Error('Email cannot be empty.');
+        payload.email = trimmed;
+      }
+
+      const { data, error } = await supabase.auth.updateUser(payload);
 
       if (error) throw new Error(error.message);
       if (data?.user && data?.session) {
@@ -299,6 +341,40 @@ export const AuthProvider = ({ children }) => {
       console.error('Update profile error:', error);
       if (error instanceof Error) throw error;
       throw new Error('Failed to update profile.');
+    }
+  };
+
+  /** Email/password accounts only; verifies current password then sets a new one. */
+  const changePassword = async (currentPassword, newPassword) => {
+    try {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      const email = session?.user?.email;
+      if (!email) throw new Error('Not signed in.');
+
+      const { error: signErr } = await supabase.auth.signInWithPassword({
+        email,
+        password: currentPassword
+      });
+      if (signErr) {
+        throw new Error(signErr.message?.includes('Invalid') ? 'Current password is incorrect.' : signErr.message);
+      }
+
+      const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw new Error(error.message || 'Could not update password.');
+
+      const {
+        data: { session: nextSession }
+      } = await supabase.auth.getSession();
+      if (data?.user && nextSession) {
+        await hydrateUserFromSession(data.user, nextSession);
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('Change password error:', error);
+      if (error instanceof Error) throw error;
+      throw new Error('Could not update password.');
     }
   };
 
@@ -325,6 +401,8 @@ export const AuthProvider = ({ children }) => {
     signUp,
     logout,
     updateProfile,
+    changePassword,
+    refreshProfile,
     getAuthToken,
     loading,
     supabase,
