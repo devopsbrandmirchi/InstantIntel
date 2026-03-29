@@ -6,8 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 const REQUEST_TIMEOUT_MS = 25000;
 const CLIENTS_LOAD_TIMEOUT_MS = 40000;
 
-const TABLE_HEADER_CLASS = 'bg-blue-900 text-white font-bold text-sm px-3 py-2.5 text-center';
+const TABLE_HEADER_CLASS = 'bg-blue-900 text-white font-bold text-sm px-3 py-2.5 text-center flex-shrink-0';
 const TABLE_FOOTER_CLASS = 'bg-blue-900 text-white font-semibold text-xs';
+/** Table area fills card below title and scrolls (parent sets max height). */
+const TABLE_BODY_SCROLL_CLASS = 'flex-1 min-h-0 overflow-auto overflow-x-auto overscroll-y-contain';
+const TH_STICKY = 'sticky top-0 z-[1] bg-gray-100 shadow-[0_1px_0_0_rgba(209,213,219,1)]';
+const TF_STICKY_TD =
+  'sticky bottom-0 z-[1] bg-blue-900 shadow-[0_-1px_0_0_rgba(30,58,138,0.35)]';
 
 function parsePrice(val) {
   if (val == null) return 0;
@@ -608,26 +613,36 @@ const InventoryComparisonReport = () => {
             return (
               <div
                 key={cid}
-                className="flex-shrink-0 w-[min(100%,520px)] min-w-[280px] border border-gray-300 rounded overflow-hidden shadow-md bg-white flex flex-col"
+                className="flex-shrink-0 w-[min(100%,520px)] min-w-[280px] max-h-[min(75vh,40rem)] border border-gray-300 rounded overflow-hidden shadow-md bg-white flex flex-col"
               >
                 <div className={TABLE_HEADER_CLASS}>{name}</div>
-                <div className="overflow-x-auto flex-1 flex flex-col">
+                <div className={`${TABLE_BODY_SCROLL_CLASS} border-t border-gray-200`}>
                   <table className="w-full text-xs border-collapse">
                     <thead>
-                      <tr className="bg-gray-100 border-b border-gray-300">
-                        <th className="text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200">
+                      <tr className="border-b border-gray-300">
+                        <th
+                          className={`text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 ${TH_STICKY}`}
+                        >
                           Manufacturer
                         </th>
-                        <th className="text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200">
+                        <th
+                          className={`text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 ${TH_STICKY}`}
+                        >
                           Brand/Model
                         </th>
-                        <th className="text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200">
+                        <th
+                          className={`text-left font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 ${TH_STICKY}`}
+                        >
                           Description
                         </th>
-                        <th className="text-right font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+                        <th
+                          className={`text-right font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 whitespace-nowrap ${TH_STICKY}`}
+                        >
                           Units
                         </th>
-                        <th className="text-right font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 whitespace-nowrap">
+                        <th
+                          className={`text-right font-semibold text-gray-800 px-2 py-2 border-b border-gray-200 whitespace-nowrap ${TH_STICKY}`}
+                        >
                           Avg price
                         </th>
                       </tr>
@@ -656,11 +671,13 @@ const InventoryComparisonReport = () => {
                     {list.length > 0 && (
                       <tfoot>
                         <tr className={TABLE_FOOTER_CLASS}>
-                          <td colSpan={3} className="px-2 py-2.5 text-left">
+                          <td colSpan={3} className={`px-2 py-2.5 text-left ${TF_STICKY_TD}`}>
                             Grand total
                           </td>
-                          <td className="px-2 py-2.5 text-right tabular-nums">{grandUnits}</td>
-                          <td className="px-2 py-2.5 text-right tabular-nums">
+                          <td className={`px-2 py-2.5 text-right tabular-nums ${TF_STICKY_TD}`}>
+                            {grandUnits}
+                          </td>
+                          <td className={`px-2 py-2.5 text-right tabular-nums ${TF_STICKY_TD}`}>
                             ${Math.round(grandValue).toLocaleString()}
                           </td>
                         </tr>
