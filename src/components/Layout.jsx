@@ -112,6 +112,7 @@ const Layout = ({ children }) => {
     '/inventory-report': 'Inventory Report',
     '/inventory-comparison': 'Inventory comparison',
     '/sales-report': 'Sales Report',
+    '/sale-pending-report': 'Sale pending report',
     '/inventory-daily-count': 'Daily Inventory Count',
     '/scrap-feed-stats': 'Scrap feed statistics',
     '/normalized-scrap-stats': 'Normalized scrap inventory stats',

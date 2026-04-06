@@ -13,6 +13,7 @@ import Inventory from './pages/Inventory';
 import InventoryReport from './pages/InventoryReport';
 import InventoryComparisonReport from './pages/InventoryComparisonReport';
 import SalesReport from './pages/SalesReport';
+import SalePendingReport from './pages/SalePendingReport';
 import InventoryDailyCount from './pages/InventoryDailyCount';
 import DailySalesCount from './pages/DailySalesCount';
 import ScrapRawdataStats from './pages/ScrapRawdataStats';
@@ -191,6 +192,16 @@ function App() {
               <RoleRoute allowViewer>
                 <Layout>
                   <SalesReport />
+                </Layout>
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="/sale-pending-report"
+            element={
+              <RoleRoute allowViewer>
+                <Layout>
+                  <SalePendingReport />
                 </Layout>
               </RoleRoute>
             }

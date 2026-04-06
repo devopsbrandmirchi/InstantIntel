@@ -6,6 +6,7 @@ const REPORT_PATHS = [
   '/inventory-report',
   '/inventory-comparison',
   '/sales-report',
+  '/sale-pending-report',
   '/inventory-daily-count',
   '/daily-sales-count'
 ];
@@ -158,6 +159,17 @@ const Sidebar = ({ collapsed, onToggle, mobileOpen, onCloseMobile, isDesktop }) 
                   >
                     <i className="fas fa-chart-line mr-3 text-sm"></i>
                     <span className="nav-text">Sales Report</span>
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/sale-pending-report"
+                    onClick={handleNavClick}
+                    className={submenuLinkClass('/sale-pending-report')}
+                    data-page="sale-pending-report"
+                  >
+                    <i className="fas fa-clock mr-3 text-sm"></i>
+                    <span className="nav-text">Sale pending report</span>
                   </Link>
                 </li>
                 <li>
