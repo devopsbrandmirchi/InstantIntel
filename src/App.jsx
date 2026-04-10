@@ -51,13 +51,17 @@ const RoleRoute = ({ children, allowViewer = false }) => {
 };
 
 const GuestRoute = ({ children }) => {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, loading, passwordRecoveryPending } = useAuth();
 
   if (loading) {
     return <AppLoadingScreen message="One moment…" />;
   }
 
-  return !currentUser ? children : <Navigate to="/dashboard" replace />;
+  if (currentUser && !passwordRecoveryPending) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 const AdminRoute = ({ children }) => {

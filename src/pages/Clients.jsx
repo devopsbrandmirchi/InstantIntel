@@ -390,7 +390,7 @@ const Clients = () => {
   };
 
   const inputClass =
-    'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7';
+    'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7';
   const labelClass = 'block font-medium text-gray-700 mb-1';
 
   return (
@@ -423,7 +423,7 @@ const Clients = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search clients..."
-              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60"
             />
           </div>
           <div className="flex items-center gap-1.5">
@@ -431,7 +431,7 @@ const Clients = () => {
             <select
               value={activeFilter}
               onChange={(e) => setActiveFilter(e.target.value)}
-              className="text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-h-0 h-7"
+              className="text-xs px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white min-h-0 h-7"
             >
               <option value="all">All</option>
               <option value="active">Active only</option>
@@ -453,7 +453,7 @@ const Clients = () => {
           <button
             type="button"
             onClick={openAddModal}
-            className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded hover:bg-blue-700 transition duration-200 whitespace-nowrap"
+            className="bg-brand-navy text-white px-3 py-1.5 text-xs rounded hover:bg-brand-navy-light transition duration-200 whitespace-nowrap"
           >
             <i className="fas fa-plus mr-1.5"></i>Add Client
           </button>
@@ -544,7 +544,7 @@ const Clients = () => {
                 sortedClients.map((client) => (
                   <React.Fragment key={client.id}>
                     <tr
-                      className={expandedId === client.id ? 'bg-blue-50' : 'hover:bg-gray-50 cursor-pointer'}
+                      className={expandedId === client.id ? 'bg-brand-mint/15' : 'hover:bg-gray-50 cursor-pointer'}
                       onClick={() => toggleExpand(client.id)}
                     >
                       <td className="px-2 py-1.5">
@@ -576,7 +576,7 @@ const Clients = () => {
                         <button
                           type="button"
                           onClick={() => openEditModal(client)}
-                          className="text-blue-600 hover:text-blue-900 mr-2"
+                          className="text-brand-teal hover:text-brand-navy mr-2"
                           title="Edit"
                         >
                           <i className="fas fa-edit"></i>
@@ -814,7 +814,7 @@ const Clients = () => {
               <button
                 type="button"
                 onClick={addLocationRow}
-                className="text-blue-600 hover:text-blue-800 text-xs"
+                className="text-brand-teal hover:text-brand-navy text-xs"
               >
                 <i className="fas fa-plus mr-1"></i>Add location
               </button>
@@ -942,7 +942,7 @@ const Clients = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50"
             >
               {saving ? 'Saving...' : editingId ? 'Update client' : 'Create client'}
             </button>

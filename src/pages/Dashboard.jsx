@@ -434,7 +434,7 @@ const Dashboard = () => {
     return (
       <div className="page-content text-xs flex flex-col items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-3 text-gray-600">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-blue-500" aria-hidden="true" />
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-brand-mint" aria-hidden="true" />
           <p className="text-sm font-medium">Loading dashboard…</p>
           <p className="text-xs text-gray-500">Please wait while we fetch your data.</p>
         </div>
@@ -460,10 +460,12 @@ const Dashboard = () => {
           {error}
         </div>
       )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
+      <div
+        className={`grid grid-cols-1 md:grid-cols-2 gap-3 mb-4 ${isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-3'}`}
+      >
         <div className="bg-white p-3 rounded shadow-md">
           <div className="flex items-center">
-            <div className="p-2 rounded-full bg-blue-100 text-blue-600">
+            <div className="p-2 rounded-full bg-brand-mint/25 text-brand-teal">
               <i className="fas fa-users text-sm"></i>
             </div>
             <div className="ml-3">
@@ -499,28 +501,32 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-        <div className="bg-white p-3 rounded shadow-md">
-          <div className="flex items-center">
-            <div className="p-2 rounded-full bg-yellow-100 text-yellow-600">
-              <i className="fas fa-user-tag text-sm"></i>
+        {isAdmin && (
+          <>
+            <div className="bg-white p-3 rounded shadow-md">
+              <div className="flex items-center">
+                <div className="p-2 rounded-full bg-yellow-100 text-yellow-600">
+                  <i className="fas fa-user-tag text-sm"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-gray-600 text-xs">Total Roles</p>
+                  <p className="text-lg font-bold text-gray-800">{stats.totalRoles}</p>
+                </div>
+              </div>
             </div>
-            <div className="ml-3">
-              <p className="text-gray-600 text-xs">Total Roles</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalRoles}</p>
+            <div className="bg-white p-3 rounded shadow-md">
+              <div className="flex items-center">
+                <div className="p-2 rounded-full bg-purple-100 text-purple-600">
+                  <i className="fas fa-chart-line text-sm"></i>
+                </div>
+                <div className="ml-3">
+                  <p className="text-gray-600 text-xs">Active Users</p>
+                  <p className="text-lg font-bold text-gray-800">{stats.activeUsers}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="bg-white p-3 rounded shadow-md">
-          <div className="flex items-center">
-            <div className="p-2 rounded-full bg-purple-100 text-purple-600">
-              <i className="fas fa-chart-line text-sm"></i>
-            </div>
-            <div className="ml-3">
-              <p className="text-gray-600 text-xs">Active Users</p>
-              <p className="text-lg font-bold text-gray-800">{stats.activeUsers}</p>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       <div className="bg-white p-4 rounded shadow-md mb-4">
@@ -548,7 +554,7 @@ const Dashboard = () => {
                         return next;
                       });
                     }}
-                    className="rounded border-gray-400 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-400 text-brand-teal focus:ring-brand-teal/60"
                   />
                   <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: ds.borderColor }} aria-hidden />
                   <span>{ds.label}</span>
@@ -587,7 +593,7 @@ const Dashboard = () => {
                         return next;
                       });
                     }}
-                    className="rounded border-gray-400 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-400 text-brand-teal focus:ring-brand-teal/60"
                   />
                   <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: ds.borderColor }} aria-hidden />
                   <span>{ds.label}</span>

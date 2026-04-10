@@ -144,7 +144,7 @@ const SendgridEventStats = () => {
     URL.revokeObjectURL(url);
   };
 
-  const inputClass = 'text-sm px-2 py-1.5 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white';
+  const inputClass = 'text-sm px-2 py-1.5 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white';
 
   return (
     <div className="max-w-[100rem] mx-auto">
@@ -192,7 +192,7 @@ const SendgridEventStats = () => {
             type="button"
             onClick={downloadCsv}
             disabled={filteredRows.length === 0}
-            className="px-3 py-2 text-sm rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-3 py-2 text-sm rounded bg-brand-navy text-white hover:bg-brand-navy-light disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <i className="fas fa-download" />
             Download CSV

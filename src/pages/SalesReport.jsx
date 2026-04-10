@@ -297,6 +297,9 @@ const SalesReport = () => {
 
   const { manufacturer, condition, location, type, grandTotalUnits, grandTotalValue } = reportAggregates;
 
+  /** Same palette as Inventory Report doughnut (brand navy / teal / mint) */
+  const typeColors = ['#1A334B', '#2d8b84', '#68C98D', '#3da89f', '#2a4a66', '#52b87a'];
+
   const typeChartData =
     type.length > 0
       ? {
@@ -304,16 +307,7 @@ const SalesReport = () => {
           datasets: [
             {
               data: type.map((t) => t.units),
-              backgroundColor: [
-                '#22C55E',
-                '#06B6D4',
-                '#1E40AF',
-                '#0D9488',
-                '#3B82F6',
-                '#14B8A6',
-                '#60A5FA',
-                '#2DD4BF'
-              ],
+              backgroundColor: type.map((_, i) => typeColors[i % typeColors.length]),
               borderWidth: 0
             }
           ]
@@ -338,9 +332,7 @@ const SalesReport = () => {
     cutout: '60%'
   };
 
-  const typeColors = ['#22C55E', '#06B6D4', '#1E40AF', '#0D9488', '#3B82F6', '#14B8A6', '#60A5FA', '#2DD4BF'];
-
-  const inputClass = 'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-h-0 h-7';
+  const inputClass = 'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white min-h-0 h-7';
   const labelClass = 'block text-xs font-medium text-gray-700 mb-1';
 
   const selectedClientName = selectedClientId
@@ -369,7 +361,7 @@ const SalesReport = () => {
             {clientsError && (
               <p className="mt-1 text-red-600 text-xs flex items-center gap-2">
                 {clientsError}
-                <button type="button" onClick={loadClients} className="text-blue-600 hover:underline font-medium">
+                <button type="button" onClick={loadClients} className="text-brand-teal hover:underline font-medium">
                   Retry
                 </button>
               </p>
@@ -431,7 +423,7 @@ const SalesReport = () => {
         </div>
       )}
 
-      <div className="bg-blue-600 text-white px-4 py-1.5 rounded mb-3">
+      <div className="bg-brand-navy text-white px-4 py-1.5 rounded mb-3">
         <h2 className="text-sm font-bold">Sales Report</h2>
       </div>
 
@@ -534,7 +526,7 @@ const SalesReport = () => {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-3">
             <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Type</h3>
+              <h3 className="text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200">Type</h3>
               <div style={{ height: '180px' }}>
                 {typeChartData ? (
                   <Doughnut data={typeChartData} options={typeChartOptions} />
@@ -566,7 +558,7 @@ const SalesReport = () => {
             </div>
 
             <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Manufacturer</h3>
+              <h3 className="text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200">Manufacturer</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
                   <thead>
@@ -599,7 +591,7 @@ const SalesReport = () => {
             </div>
 
             <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Condition</h3>
+              <h3 className="text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200">Condition</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
                   <thead>
@@ -632,7 +624,7 @@ const SalesReport = () => {
             </div>
 
             <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Location</h3>
+              <h3 className="text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200">Location</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
                   <thead>
@@ -666,7 +658,7 @@ const SalesReport = () => {
           </div>
 
           <div className="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-            <div className="bg-blue-600 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-brand-navy text-white px-4 py-2 flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-sm font-bold">Sales Report — VINs</h3>
               <label className="flex items-center gap-2 text-xs font-medium text-white/95">
                 <span className="whitespace-nowrap">Location</span>
@@ -722,7 +714,7 @@ const SalesReport = () => {
                           <span
                             role="button"
                             tabIndex={0}
-                            className={`cursor-pointer ${row.image_url ? 'text-blue-600 hover:underline' : 'text-gray-700'}`}
+                            className={`cursor-pointer ${row.image_url ? 'text-brand-teal hover:underline' : 'text-gray-700'}`}
                             onClick={() => row.image_url && setVinPopoverRowId((id) => (id === row.id ? null : row.id))}
                             onKeyDown={(e) => { if (row.image_url && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setVinPopoverRowId((id) => (id === row.id ? null : row.id)); } }}
                             onMouseEnter={() => row.image_url && setVinPopoverRowId(row.id)}

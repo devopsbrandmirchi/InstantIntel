@@ -114,9 +114,9 @@ function MiniCalendar({ monthDate, selectedFrom, selectedTo, onSelect, onPrevMon
               }}
               className={`
                 py-1.5 rounded text-[11px] leading-tight cursor-pointer min-w-[24px]
-                ${!currentMonth ? 'text-gray-300 cursor-default' : 'text-gray-800 hover:bg-blue-50'}
-                ${inRange && !selected ? 'bg-blue-100' : ''}
-                ${selected ? 'bg-blue-600 text-white hover:bg-blue-700' : ''}
+                ${!currentMonth ? 'text-gray-300 cursor-default' : 'text-gray-800 hover:bg-brand-mint/15'}
+                ${inRange && !selected ? 'bg-brand-mint/25' : ''}
+                ${selected ? 'bg-brand-navy text-white hover:bg-brand-navy-light' : ''}
               `}
             >
               {date.getDate()}
@@ -207,7 +207,7 @@ export default function DateRangePicker({ valueFrom, valueTo, onChange, placehol
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center px-3 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-[28px] ${buttonClassName}`}
+        className={`inline-flex items-center px-3 py-1.5 border border-gray-300 rounded text-xs bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-[28px] ${buttonClassName}`}
       >
         <i className="fas fa-calendar-alt text-gray-500 mr-2" />
         {displayLabel}
@@ -224,7 +224,7 @@ export default function DateRangePicker({ valueFrom, valueTo, onChange, placehol
                   key={opt.label}
                   type="button"
                   onClick={() => handleQuick(opt.getRange)}
-                  className="text-left text-blue-600 hover:underline text-xs py-0.5"
+                  className="text-left text-brand-teal hover:underline text-xs py-0.5"
                 >
                   {opt.label}
                 </button>
@@ -260,7 +260,7 @@ export default function DateRangePicker({ valueFrom, valueTo, onChange, placehol
             <button
               type="button"
               onClick={apply}
-              className="px-3 py-1.5 text-xs rounded bg-blue-600 text-white hover:bg-blue-700"
+              className="px-3 py-1.5 text-xs rounded bg-brand-navy text-white hover:bg-brand-navy-light"
             >
               Apply
             </button>

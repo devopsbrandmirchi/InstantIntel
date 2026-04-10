@@ -108,7 +108,7 @@ const Inventory = () => {
     }
   };
 
-  const inputClass = 'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7';
+  const inputClass = 'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7';
 
   return (
     <div className="bg-white rounded shadow-md p-4 text-xs">
@@ -117,7 +117,7 @@ const Inventory = () => {
         <button
           type="button"
           onClick={openAddModal}
-          className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded hover:bg-blue-700 transition duration-200"
+          className="bg-brand-navy text-white px-3 py-1.5 text-xs rounded hover:bg-brand-navy-light transition duration-200"
         >
           <i className="fas fa-plus mr-1.5"></i>Add Item
         </button>
@@ -151,7 +151,7 @@ const Inventory = () => {
                     <button
                       type="button"
                       onClick={() => openEditModal(item.id)}
-                      className="text-blue-600 hover:text-blue-900 mr-2"
+                      className="text-brand-teal hover:text-brand-navy mr-2"
                       title="Edit"
                     >
                       <i className="fas fa-edit"></i>
@@ -229,7 +229,7 @@ const Inventory = () => {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60"
             />
           </div>
           <div className="flex justify-end gap-2 pt-3">
@@ -243,7 +243,7 @@ const Inventory = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50"
             >
               {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
             </button>

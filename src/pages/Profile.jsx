@@ -115,7 +115,7 @@ const Profile = () => {
               type="text"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
             />
           </div>
           <div>
@@ -124,7 +124,7 @@ const Profile = () => {
               type="text"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+              className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
             />
           </div>
         </div>
@@ -140,7 +140,7 @@ const Profile = () => {
               : { readOnly: true })}
             className={`w-full px-2 py-1 text-xs border rounded min-h-0 h-7 ${
               isAdmin
-                ? 'border-gray-300 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white'
+                ? 'border-gray-300 focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white'
                 : 'border-gray-200 bg-gray-50'
             }`}
           />
@@ -156,13 +156,13 @@ const Profile = () => {
             type="tel"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+            className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
           />
         </div>
         <button
           type="submit"
           disabled={saving}
-          className="bg-blue-600 text-white px-4 py-1.5 text-xs rounded hover:bg-blue-700 transition duration-200 disabled:opacity-50"
+          className="bg-brand-navy text-white px-4 py-1.5 text-xs rounded hover:bg-brand-navy-light transition duration-200 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Update Profile'}
         </button>
@@ -197,7 +197,7 @@ const Profile = () => {
                 autoComplete="current-password"
                 value={pwdForm.current}
                 onChange={(e) => setPwdForm({ ...pwdForm, current: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
                 required
               />
             </div>
@@ -208,7 +208,7 @@ const Profile = () => {
                 autoComplete="new-password"
                 value={pwdForm.next}
                 onChange={(e) => setPwdForm({ ...pwdForm, next: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
                 minLength={MIN_PASSWORD_LEN}
                 required
               />
@@ -221,7 +221,7 @@ const Profile = () => {
                 autoComplete="new-password"
                 value={pwdForm.confirm}
                 onChange={(e) => setPwdForm({ ...pwdForm, confirm: e.target.value })}
-                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7"
+                className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7"
                 minLength={MIN_PASSWORD_LEN}
                 required
               />

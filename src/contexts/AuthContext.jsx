@@ -122,10 +122,25 @@ async function fetchAssignedClientIds(userId) {
 
 const CONNECTION_ERROR_MESSAGE = 'Unable to connect. Please check your network and refresh.';
 
+/** True when URL hash is a Supabase password-recovery redirect (before/after client parses it). */
+function isRecoveryHash() {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hash || '';
+  if (!h) return false;
+  try {
+    const q = h.startsWith('#') ? h.slice(1) : h;
+    const params = new URLSearchParams(q);
+    if (params.get('type') === 'recovery') return true;
+  } catch (_) {}
+  return /type=recovery|type%3Drecovery/i.test(h);
+}
+
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(null);
+  /** User arrived via email reset link — allow /login to show "set new password" instead of redirecting away. */
+  const [passwordRecoveryPending, setPasswordRecoveryPending] = useState(() => isRecoveryHash());
 
   /** Full DB role + profile. Used on sign-in and explicit refresh only — not on token rotation. */
   const hydrateUserFromSession = async (supabaseUser, session) => {
@@ -188,6 +203,7 @@ export const AuthProvider = ({ children }) => {
         } = await supabase.auth.getSession();
         if (cancelled) return;
         if (session?.user) {
+          if (isRecoveryHash()) setPasswordRecoveryPending(true);
           await hydrateUserFromSession(session.user, session);
           if (!cancelled) setConnectionError(null);
         } else {
@@ -222,8 +238,22 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      if (event === 'PASSWORD_RECOVERY' && session?.user) {
+        setPasswordRecoveryPending(true);
+        try {
+          await hydrateUserFromSession(session.user, session);
+          setConnectionError(null);
+        } catch (err) {
+          console.warn('Recovery session hydrate failed:', err?.message);
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       if (event === 'SIGNED_OUT' || !session?.user) {
         setCurrentUser(null);
+        setPasswordRecoveryPending(false);
         setConnectionError(null);
         setLoading(false);
         return;
@@ -395,6 +425,35 @@ export const AuthProvider = ({ children }) => {
 
   const clearConnectionError = () => setConnectionError(null);
 
+  /** Password reset email; set VITE_AUTH_REDIRECT_URL to full URL if login is not at site root. */
+  const requestPasswordReset = async (email) => {
+    const trimmed = String(email || '').trim();
+    if (!trimmed) throw new Error('Enter your email.');
+    const envUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+    const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '';
+    const redirectTo =
+      envUrl || `${window.location.origin}${basePath ? `${basePath}` : ''}/login`;
+    const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo });
+    if (error) throw new Error(error.message || 'Could not send reset email.');
+  };
+
+  /** After user opens the email link: recovery session is active; set new password without current password. */
+  const completePasswordRecovery = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw new Error(error.message || 'Could not update password.');
+    setPasswordRecoveryPending(false);
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname + window.location.search;
+      window.history.replaceState(null, '', path);
+    }
+    if (data?.user) {
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      if (session) await hydrateUserFromSession(session.user, session);
+    }
+  };
+
   const value = {
     currentUser,
     login,
@@ -402,6 +461,9 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateProfile,
     changePassword,
+    requestPasswordReset,
+    completePasswordRecovery,
+    passwordRecoveryPending,
     refreshProfile,
     getAuthToken,
     loading,

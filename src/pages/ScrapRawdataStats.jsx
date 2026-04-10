@@ -34,7 +34,7 @@ function JournalLogModalBody({ command, instanceSlug, onCopy, copied }) {
           <button
             type="button"
             onClick={() => onCopy(command)}
-            className="text-xs font-medium text-blue-700 hover:text-blue-900 flex items-center gap-1.5 px-2 py-1 rounded-md border border-blue-200 bg-blue-50 hover:bg-blue-100"
+            className="text-xs font-medium text-brand-navy-light hover:text-brand-navy flex items-center gap-1.5 px-2 py-1 rounded-md border border-brand-teal/30 bg-brand-mint/15 hover:bg-brand-mint/20"
           >
             <i className="fas fa-copy" aria-hidden />
             {copied ? 'Copied!' : 'Copy command'}
@@ -393,7 +393,7 @@ const ScrapRawdataStats = () => {
                   <pre className="text-xs bg-slate-900 text-slate-100 rounded-md p-3 overflow-x-auto whitespace-pre-wrap break-all font-mono pointer-events-none">
                     {journalctlScrapyCommand('Livingston')}
                   </pre>
-                  <p className="text-[11px] text-blue-700 font-medium mt-2 flex items-center gap-1.5">
+                  <p className="text-[11px] text-brand-navy-light font-medium mt-2 flex items-center gap-1.5">
                     <i className="fas fa-external-link-alt text-[10px]" aria-hidden />
                     Click to open instructions &amp; copy command
                   </p>
@@ -451,7 +451,7 @@ const ScrapRawdataStats = () => {
                                     instanceSlug: slug
                                   })
                                 }
-                                className="text-left w-full text-xs font-mono text-blue-700 hover:text-blue-900 hover:underline break-all rounded-md px-2 py-1.5 -mx-2 -my-1.5 border border-transparent hover:border-blue-200 hover:bg-blue-50/80 transition-colors"
+                                className="text-left w-full text-xs font-mono text-brand-navy-light hover:text-brand-navy hover:underline break-all rounded-md px-2 py-1.5 -mx-2 -my-1.5 border border-transparent hover:border-brand-teal/30 hover:bg-brand-mint/15/80 transition-colors"
                               >
                                 {cmd}
                               </button>

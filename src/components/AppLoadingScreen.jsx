@@ -9,20 +9,20 @@ const AppLoadingScreen = ({ message = 'Loading your workspace…' }) => {
     <div
       className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden"
       style={{
-        background: 'linear-gradient(160deg, #0f2137 0%, #1e3a5f 38%, #152a45 72%, #0f172a 100%)'
+        background: 'linear-gradient(160deg, #1A334B 0%, #152a38 45%, #0f1f2e 100%)'
       }}
     >
       {/* Soft accent orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-amber-500/8 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-sky-500/6 blur-3xl" />
+        <div className="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-mint/10 blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-[28rem] h-[28rem] rounded-full bg-brand-teal/8 blur-3xl" />
       </div>
 
       <div className="relative z-10 w-full max-w-md">
         <div className="rounded-2xl border border-white/10 bg-white/[0.07] backdrop-blur-md shadow-2xl shadow-black/20 px-8 py-10 text-center">
           <div className="flex justify-center mb-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-400/25">
-              <i className="fas fa-building text-2xl text-amber-400/95" aria-hidden="true" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-brand-mint/15 border border-brand-mint/30">
+              <i className="fas fa-caravan text-2xl text-brand-mint/95" aria-hidden="true" />
             </div>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-white mb-1">Instant Intel</h1>
@@ -30,7 +30,7 @@ const AppLoadingScreen = ({ message = 'Loading your workspace…' }) => {
 
           <div className="flex flex-col items-center gap-4">
             <div
-              className="h-11 w-11 rounded-full border-2 border-white/20 border-t-amber-400 animate-spin"
+              className="h-11 w-11 rounded-full border-2 border-white/20 border-t-brand-mint animate-spin"
               role="status"
               aria-label="Loading"
             />

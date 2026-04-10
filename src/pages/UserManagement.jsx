@@ -309,7 +309,7 @@ const UserManagement = () => {
   };
 
   const inputClass =
-    'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 min-h-0 h-7';
+    'w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 min-h-0 h-7';
 
   if (!canManageUsers) {
     return (
@@ -337,7 +337,7 @@ const UserManagement = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search users..."
-              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60"
             />
           </div>
           <a
@@ -351,7 +351,7 @@ const UserManagement = () => {
           <button
             type="button"
             onClick={openAddModal}
-            className="bg-blue-600 text-white px-3 py-1.5 text-xs rounded hover:bg-blue-700 transition duration-200 whitespace-nowrap"
+            className="bg-brand-navy text-white px-3 py-1.5 text-xs rounded hover:bg-brand-navy-light transition duration-200 whitespace-nowrap"
           >
             <i className="fas fa-user-plus mr-1.5"></i>Add User
           </button>
@@ -438,7 +438,7 @@ const UserManagement = () => {
                 sortedProfiles.map((profile) => (
                   <React.Fragment key={profile.id}>
                     <tr
-                      className={`cursor-pointer ${expandedProfileId === profile.id ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                      className={`cursor-pointer ${expandedProfileId === profile.id ? 'bg-brand-mint/15' : 'hover:bg-gray-50'}`}
                       onClick={() => toggleExpandProfile(profile.id)}
                     >
                       <td className="px-2 py-1.5">
@@ -455,7 +455,7 @@ const UserManagement = () => {
                         <button
                           type="button"
                           onClick={(e) => openEditModal(profile, e)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-brand-teal hover:text-brand-navy"
                           title="Edit"
                         >
                           <i className="fas fa-edit"></i>
@@ -567,7 +567,7 @@ const UserManagement = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50"
             >
               {saving ? 'Creating...' : 'Create user'}
             </button>
@@ -633,7 +633,7 @@ const UserManagement = () => {
                     value={clientSearchQuery}
                     onChange={(e) => setClientSearchQuery(e.target.value)}
                     placeholder="Search clients..."
-                    className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                    className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white"
                   />
                 </div>
                 <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50 space-y-1">
@@ -680,7 +680,7 @@ const UserManagement = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+              className="px-3 py-1.5 bg-brand-navy text-white rounded hover:bg-brand-navy-light disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Update profile'}
             </button>

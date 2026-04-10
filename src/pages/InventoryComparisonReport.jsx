@@ -6,13 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 const REQUEST_TIMEOUT_MS = 25000;
 const CLIENTS_LOAD_TIMEOUT_MS = 40000;
 
-const TABLE_HEADER_CLASS = 'bg-blue-900 text-white font-bold text-sm px-3 py-2.5 text-center flex-shrink-0';
-const TABLE_FOOTER_CLASS = 'bg-blue-900 text-white font-semibold text-xs';
+const TABLE_HEADER_CLASS = 'bg-brand-navy text-white font-bold text-sm px-3 py-2.5 text-center flex-shrink-0';
+const TABLE_FOOTER_CLASS = 'bg-brand-navy text-white font-semibold text-xs';
 /** Table area fills card below title and scrolls (parent sets max height). */
 const TABLE_BODY_SCROLL_CLASS = 'flex-1 min-h-0 overflow-auto overflow-x-auto overscroll-y-contain';
 const TH_STICKY = 'sticky top-0 z-[1] bg-gray-100 shadow-[0_1px_0_0_rgba(209,213,219,1)]';
 const TF_STICKY_TD =
-  'sticky bottom-0 z-[1] bg-blue-900 shadow-[0_-1px_0_0_rgba(30,58,138,0.35)]';
+  'sticky bottom-0 z-[1] bg-brand-navy shadow-[0_-1px_0_0_rgba(26,51,75,0.35)]';
 
 function parsePrice(val) {
   if (val == null) return 0;
@@ -375,7 +375,7 @@ const InventoryComparisonReport = () => {
   };
 
   const inputClass =
-    'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-h-0 h-7';
+    'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white min-h-0 h-7';
   const labelClass = 'block text-xs font-medium text-gray-700 mb-1';
 
   const noClientsAssigned = isRestrictedByAssignment && assignedClientIds.length === 0;
@@ -411,7 +411,7 @@ const InventoryComparisonReport = () => {
             type="button"
             onClick={handleRefresh}
             disabled={loading}
-            className="h-7 px-3 text-xs font-medium rounded border border-blue-800 bg-blue-900 text-white hover:bg-blue-800 disabled:opacity-50 inline-flex items-center gap-1.5"
+            className="h-7 px-3 text-xs font-medium rounded border border-brand-navy bg-brand-navy text-white hover:bg-brand-navy disabled:opacity-50 inline-flex items-center gap-1.5"
           >
             <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`} aria-hidden />
             Refresh
@@ -436,7 +436,7 @@ const InventoryComparisonReport = () => {
       {clientsError && (
         <p className="text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-3 flex flex-wrap items-center gap-2">
           {clientsError}
-          <button type="button" onClick={loadClients} className="text-blue-600 hover:underline font-medium">
+          <button type="button" onClick={loadClients} className="text-brand-teal hover:underline font-medium">
             Retry
           </button>
         </p>
@@ -455,7 +455,7 @@ const InventoryComparisonReport = () => {
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleClient(c.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-brand-teal focus:ring-brand-teal/60"
                     />
                     <span>{c.full_name || `Client #${c.id}`}</span>
                   </label>

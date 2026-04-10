@@ -2,80 +2,207 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  body {
+    @apply font-sans antialiased text-gray-900;
+  }
+}
+
 /* Custom styles for Business Management System */
 
 :root {
-    --primary-color: #3B82F6;
-    --secondary-color: #10B981;
+    --brand-navy: #1A334B;
+    --brand-navy-light: #2a4a66;
+    --brand-mint: #68C98D;
+    --brand-mint-dark: #52b87a;
+    --brand-teal: #2d8b84;
+    --brand-teal-light: #3da89f;
+    --brand-page: #f0f2f5;
+    --primary-color: var(--brand-navy);
+    --secondary-color: var(--brand-mint);
     --danger-color: #EF4444;
     --warning-color: #F59E0B;
-    --dark-bg: #1F2937;
-    --light-bg: #F9FAFB;
+    --dark-bg: var(--brand-navy);
+    --light-bg: var(--brand-page);
     --off-white: #FEFEFE;
     --menu-hover: #F3F4F6;
 }
 
-/* Sidebar styles */
+/* Sidebar styles — position/size come from Layout + Tailwind; avoid overriding utilities */
 .sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100vh;
-    max-height: 100vh;
     z-index: 40;
-    transition: all 0.3s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
     background-color: var(--off-white);
     border-right: 1px solid #E5E7EB;
     box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Sophisticated corporate sidebar – deep navy with subtle accent */
+/* Desktop mint rail: in document flow below header */
+.sidebar.sidebar-layout-embedded {
+    position: relative;
+    left: auto;
+    top: auto;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    transform: none !important;
+    z-index: 1;
+}
+
+/* Desktop: narrow mint rail; hover expands over main content (no layout shift) */
+@media (min-width: 768px) {
+    .sidebar.sidebar-layout-embedded.sidebar-hover-expand {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: auto;
+    }
+    .sidebar.sidebar-hover-expand {
+        width: 76px;
+        min-width: 76px;
+        transition: width 0.22s ease, min-width 0.22s ease, box-shadow 0.2s ease;
+    }
+    .sidebar.sidebar-hover-expand:hover {
+        width: 280px;
+        min-width: 280px;
+        box-shadow: 8px 0 28px rgba(26, 51, 75, 0.12);
+        z-index: 30;
+    }
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-text,
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-chevron {
+        display: none !important;
+    }
+    .sidebar.sidebar-hover-expand:not(:hover) li.sidebar-nav-section-label {
+        display: none !important;
+    }
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-link,
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-link-top-level {
+        justify-content: center;
+        margin-left: 4px;
+        margin-right: 4px;
+    }
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-link i,
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-link-top-level i {
+        margin-right: 0 !important;
+    }
+    /* Desktop: submenus open on row hover — hide chevron (no click affordance) */
+    .sidebar.sidebar-hover-expand .nav-menu-item > button .nav-chevron {
+        display: none !important;
+    }
+    /* Collapsed rail: hide inline submenus */
+    .sidebar.sidebar-hover-expand:not(:hover) .nav-menu-item > ul.nav-submenu {
+        max-height: 0 !important;
+        opacity: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    /* Row turns white while its submenu is shown (matches reference) */
+    .sidebar.sidebar-hover-expand:hover .nav-menu-item:hover > button.nav-link {
+        background: #fff !important;
+        color: var(--brand-navy) !important;
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-menu-item:has(.nav-submenu-viewer-open) > button.nav-link {
+        background: #fff !important;
+        color: var(--brand-navy) !important;
+    }
+    /* Expanded: Reports/Scrapping — white panel + links on row hover (viewer: always open while sidebar hovered) */
+    .sidebar.sidebar-hover-expand:hover .nav-menu-item:hover > ul.nav-submenu.nav-submenu-desktop,
+    .sidebar.sidebar-hover-expand:hover .nav-menu-item:focus-within > ul.nav-submenu.nav-submenu-desktop,
+    .sidebar.sidebar-hover-expand:hover ul.nav-submenu.nav-submenu-desktop.nav-submenu-viewer-open {
+        max-height: 560px !important;
+        opacity: 1 !important;
+        overflow: visible !important;
+        margin-top: 4px;
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-menu-item > ul.nav-submenu.nav-submenu-desktop {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin-left: 8px;
+        margin-right: 8px;
+        margin-bottom: 6px;
+        padding: 4px 0;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.07);
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-submenu-desktop .nav-submenu-link {
+        border-left: none;
+        margin: 0 6px;
+        padding: 10px 12px;
+        border-radius: 6px;
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-submenu-desktop li + li .nav-submenu-link {
+        border-top: 1px solid #f3f4f6;
+        border-radius: 0;
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-submenu-desktop li:last-child .nav-submenu-link {
+        border-radius: 0 0 6px 6px;
+    }
+    .sidebar.sidebar-hover-expand:hover .nav-submenu-desktop li:first-child .nav-submenu-link {
+        border-radius: 6px 6px 0 0;
+    }
+}
+
+/* Mint sidebar – Instant Intel RVS */
 .sidebar.sidebar-themed {
-    background: linear-gradient(180deg, #1e3a5f 0%, #152a45 50%, #0f2137 100%);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    background: var(--brand-mint);
+    border-right: 1px solid rgba(26, 51, 75, 0.12);
+    box-shadow: 2px 0 12px rgba(26, 51, 75, 0.08);
 }
 .sidebar.sidebar-themed .sidebar-header {
-    background: rgba(0, 0, 0, 0.15);
-    border-bottom-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.2);
+    border-bottom-color: rgba(26, 51, 75, 0.1);
 }
 .sidebar.sidebar-themed .nav-link {
-    color: rgba(255, 255, 255, 0.88);
+    color: rgba(26, 51, 75, 0.92);
     border-left-color: transparent;
 }
 .sidebar.sidebar-themed .nav-link:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-left-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.45);
+    color: var(--brand-navy);
+    border-left-color: rgba(26, 51, 75, 0.25);
 }
 .sidebar.sidebar-themed .nav-link.active {
-    background: rgba(255, 255, 255, 0.12);
-    border-left-color: #f59e0b;
-    color: #fff;
+    background: rgba(255, 255, 255, 0.55);
+    border-left-color: var(--brand-navy);
+    color: var(--brand-navy);
     box-shadow: none;
+    font-weight: 600;
 }
 .sidebar.sidebar-themed .nav-link.active:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.65);
 }
-.sidebar.sidebar-themed .nav-link[data-page="dashboard"] i { color: #93c5fd; }
-.sidebar.sidebar-themed .nav-link[data-page="profile"] i { color: #86efac; }
-.sidebar.sidebar-themed .nav-link[data-page="clients"] i { color: #c4b5fd; }
-.sidebar.sidebar-themed .nav-link[data-page="roles"] i { color: #fcd34d; }
-.sidebar.sidebar-themed .nav-link[data-page="inventory"] i { color: #fca5a5; }
+.sidebar.sidebar-themed .nav-link[data-page="dashboard"] i,
+.sidebar.sidebar-themed .nav-link[data-page="profile"] i,
+.sidebar.sidebar-themed .nav-link[data-page="clients"] i,
+.sidebar.sidebar-themed .nav-link[data-page="roles"] i,
+.sidebar.sidebar-themed .nav-link[data-page="inventory"] i,
 .sidebar.sidebar-themed .nav-link[data-page="reports"] i,
-.sidebar.sidebar-themed #reportsMenuToggle i { color: #5eead4; }
-.sidebar.sidebar-themed #scrappingReportsMenuToggle .flex.items-center > i { color: #a5b4fc; }
+.sidebar.sidebar-themed #reportsMenuToggle i,
+.sidebar.sidebar-themed #scrappingReportsMenuToggle .flex.items-center > i {
+    color: var(--brand-navy);
+    opacity: 0.85;
+}
 .sidebar.sidebar-themed .nav-submenu-link {
-    color: rgba(255, 255, 255, 0.78);
+    color: rgba(26, 51, 75, 0.88);
 }
 .sidebar.sidebar-themed .nav-submenu-link:hover,
 .sidebar.sidebar-themed .nav-submenu-link.active {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-left-color: rgba(245, 158, 11, 0.6);
+    background: rgba(255, 255, 255, 0.45);
+    color: var(--brand-navy);
+    border-left-color: var(--brand-navy);
 }
 .sidebar.sidebar-themed .nav-chevron {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(26, 51, 75, 0.45);
+}
+.sidebar.sidebar-themed .nav-section-title {
+    color: rgba(26, 51, 75, 0.55);
+}
+.sidebar.sidebar-themed .sidebar-nav-section-break .nav-section-divider {
+    border-color: rgba(26, 51, 75, 0.15);
 }
 
 .sidebar.collapsed {
@@ -233,14 +360,14 @@
 }
 
 .sidebar.sidebar-themed .nav-link-top-level.active {
-    border-left-color: #f59e0b;
+    border-left-color: var(--brand-navy);
 }
 
 /* Main content adjustments */
 .main-content {
     margin-left: 0;
     transition: margin-left 0.3s ease;
-    background-color: #F9FAFB;
+    background-color: var(--brand-page);
     min-height: 100vh;
     width: 100%;
 }
@@ -259,35 +386,6 @@
     .main-content.expanded {
         margin-left: 60px;
     }
-}
-
-/* Sidebar: mobile drawer */
-.sidebar {
-    transform: translateX(-100%);
-}
-
-@media (min-width: 768px) {
-    .sidebar {
-        transform: translateX(0);
-    }
-}
-
-.sidebar.sidebar-mobile-open {
-    transform: translateX(0);
-    width: min(280px, 85vw);
-    max-width: 100%;
-}
-
-@media (min-width: 768px) {
-    .sidebar.sidebar-mobile-open {
-        width: 16rem; /* w-64 */
-    }
-}
-
-/* Header styling to match new theme */
-header {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Improve contrast for sidebar in collapsed mode */

@@ -203,12 +203,14 @@ const InventoryReport = () => {
 
   const { manufacturer, condition, location, type, inventoryList, grandTotalUnits, grandTotalValue, grandTotalAveragePrice } = reportAggregates;
 
+  const typeColors = ['#1A334B', '#2d8b84', '#68C98D', '#3da89f', '#2a4a66', '#52b87a'];
+
   const typeChartData = type.length > 0
     ? {
         labels: type.map((t) => t.name),
         datasets: [{
           data: type.map((t) => t.units),
-          backgroundColor: ['#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'],
+          backgroundColor: typeColors,
           borderWidth: 0
         }]
       }
@@ -231,8 +233,6 @@ const InventoryReport = () => {
     },
     cutout: '60%'
   };
-
-  const typeColors = ['#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE', '#DBEAFE'];
 
   const downloadInventoryListCsv = () => {
     const headers = ['Manufacturer', 'Brand / Model', 'Condition', 'Units', 'Average Price', 'Total Value'];
@@ -259,16 +259,19 @@ const InventoryReport = () => {
     URL.revokeObjectURL(url);
   };
 
-  const inputClass = 'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white min-h-0 h-7';
+  const inputClass =
+    'text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-teal/60 bg-white min-h-0 h-7';
   const labelClass = 'block text-xs font-medium text-gray-700 mb-1';
+  const cardTitleClass = 'text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200';
+  const grandTotalRowClass = 'font-bold bg-brand-navy text-white';
 
   const selectedClientName = selectedClientId
     ? (clients.find((c) => String(c.id) === selectedClientId)?.full_name || 'Client')
     : 'All clients';
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 text-xs">
-      <div className="flex flex-wrap justify-between items-center gap-2 mb-2">
+    <div className="text-xs space-y-3">
+      <div className="bg-white rounded border border-gray-200 shadow-sm p-3 flex flex-wrap justify-between items-center gap-2">
         <div className="flex flex-wrap items-end gap-3">
           <div>
             <label className={labelClass}>Client</label>
@@ -287,7 +290,7 @@ const InventoryReport = () => {
             {clientsError && (
               <p id="clients-error" className="mt-1 text-red-600 text-xs flex items-center gap-2">
                 {clientsError}
-                <button type="button" onClick={loadClients} className="text-blue-600 hover:underline font-medium">
+                <button type="button" onClick={loadClients} className="text-brand-teal hover:underline font-medium">
                   Retry
                 </button>
               </p>
@@ -315,7 +318,7 @@ const InventoryReport = () => {
                 void Promise.all([loadClients(), loadInventoryData()]);
               }}
               disabled={loading}
-              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 h-7 rounded-lg bg-slate-700 text-white shadow-sm hover:bg-slate-600 active:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-1"
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 h-7 rounded-md bg-brand-navy text-white shadow-sm hover:bg-brand-navy-light active:bg-brand-navy disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:ring-offset-1"
               aria-label="Refresh clients and inventory data"
             >
               <i className={`fas fa-sync-alt ${loading ? 'animate-spin' : ''}`} aria-hidden />
@@ -337,20 +340,11 @@ const InventoryReport = () => {
         </div>
       )}
 
-      <div className="bg-blue-600 text-white px-4 py-1.5 rounded mb-3">
-        <h2 className="text-sm font-bold">Current Inventory</h2>
+      <div className="bg-brand-navy text-white px-4 py-2 shadow-sm">
+        <h2 className="text-sm font-bold tracking-wide">Current Inventory</h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
-        <div>
-          <label className={labelClass}>Condition</label>
-          <select value={filters.condition} onChange={(e) => setFilters((f) => ({ ...f, condition: e.target.value }))} className={`w-full ${inputClass}`}>
-            <option value="">All</option>
-            {distinctValues.conditions.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
+      <div className="bg-white rounded border border-gray-200 shadow-sm p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <div>
           <label className={labelClass}>Manufacturer</label>
           <select value={filters.manufacturer} onChange={(e) => setFilters((f) => ({ ...f, manufacturer: e.target.value }))} className={`w-full ${inputClass}`}>
@@ -366,15 +360,6 @@ const InventoryReport = () => {
             <option value="">All</option>
             {distinctValues.models.map((m) => (
               <option key={m} value={m}>{m}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>Type</label>
-          <select value={filters.type} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))} className={`w-full ${inputClass}`}>
-            <option value="">All</option>
-            {distinctValues.types.map((t) => (
-              <option key={t} value={t}>{t}</option>
             ))}
           </select>
         </div>
@@ -396,16 +381,34 @@ const InventoryReport = () => {
             ))}
           </select>
         </div>
+        <div>
+          <label className={labelClass}>Condition</label>
+          <select value={filters.condition} onChange={(e) => setFilters((f) => ({ ...f, condition: e.target.value }))} className={`w-full ${inputClass}`}>
+            <option value="">All</option>
+            {distinctValues.conditions.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>Type</label>
+          <select value={filters.type} onChange={(e) => setFilters((f) => ({ ...f, type: e.target.value }))} className={`w-full ${inputClass}`}>
+            <option value="">All</option>
+            {distinctValues.types.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading ? (
         <p className="text-gray-500 py-4">Loading report...</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 mb-3">
-            <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Type</h3>
-              <div style={{ height: '180px' }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm">
+              <h3 className={cardTitleClass}>Type</h3>
+              <div className="h-[200px] sm:h-[220px]">
                 {typeChartData ? <Doughnut data={typeChartData} options={typeChartOptions} /> : <p className="text-gray-500 text-xs">No data</p>}
               </div>
               {type.length > 0 && (
@@ -426,15 +429,15 @@ const InventoryReport = () => {
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Manufacturer</h3>
+            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm">
+              <h3 className={cardTitleClass}>Manufacturer</h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
                   <thead>
                     <tr className="border-b border-gray-200">
-                      <th className="text-left py-1 px-1.5 font-medium text-gray-700">Manufacturer</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Units</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Total Value</th>
+                      <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Manufacturer</th>
+                      <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
+                      <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -445,77 +448,79 @@ const InventoryReport = () => {
                         <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
                       </tr>
                     ))}
-                    <tr className="font-semibold bg-gray-50">
-                      <td className="py-1 px-1.5 text-gray-900">Grand Total</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">{grandTotalUnits}</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">${Math.round(grandTotalValue).toLocaleString()}</td>
+                    <tr className={grandTotalRowClass}>
+                      <td className="py-1.5 px-1.5">Grand Total</td>
+                      <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
+                      <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Condition</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-1 px-1.5 font-medium text-gray-700">Condition</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Units</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Total Value</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {condition.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="py-1 px-1.5 text-gray-700">{item.name || ''}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+            <div className="flex flex-col gap-3 min-h-0">
+              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex-1 min-h-0">
+                <h3 className={cardTitleClass}>Condition</h3>
+                <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+                  <table className="min-w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Condition</th>
+                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
+                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
                       </tr>
-                    ))}
-                    <tr className="font-semibold bg-gray-50">
-                      <td className="py-1 px-1.5 text-gray-900">Grand Total</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">{grandTotalUnits}</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">${Math.round(grandTotalValue).toLocaleString()}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {condition.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="py-1 px-1.5 text-gray-700">{item.name || ''}</td>
+                          <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
+                          <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr className={grandTotalRowClass}>
+                        <td className="py-1.5 px-1.5">Grand Total</td>
+                        <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
+                        <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
 
-            <div className="bg-white border border-gray-200 rounded p-2 shadow-sm">
-              <h3 className="text-xs font-semibold text-blue-600 mb-2 pb-1 border-b border-gray-200">Location</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-1 px-1.5 font-medium text-gray-700">Location</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Units</th>
-                      <th className="text-right py-1 px-1.5 font-medium text-gray-700">Total Value</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {location.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="py-1 px-1.5 text-gray-700">{item.name}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex-1 min-h-0">
+                <h3 className={cardTitleClass}>Location</h3>
+                <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+                  <table className="min-w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Location</th>
+                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
+                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
                       </tr>
-                    ))}
-                    <tr className="font-semibold bg-gray-50">
-                      <td className="py-1 px-1.5 text-gray-900">Grand Total</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">{grandTotalUnits}</td>
-                      <td className="py-1 px-1.5 text-right text-gray-900">${Math.round(grandTotalValue).toLocaleString()}</td>
-                    </tr>
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {location.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="py-1 px-1.5 text-gray-700">{item.name}</td>
+                          <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
+                          <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                      <tr className={grandTotalRowClass}>
+                        <td className="py-1.5 px-1.5">Grand Total</td>
+                        <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
+                        <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
 
           <div className="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-            <div className="bg-blue-600 text-white px-4 py-1.5 flex flex-wrap items-center justify-between gap-2">
+            <div className="bg-brand-navy text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-sm font-bold">Inventory List</h3>
               <button
                 type="button"
@@ -555,11 +560,11 @@ const InventoryReport = () => {
                       </tr>
                     );
                   })}
-                  <tr className="font-semibold bg-gray-100">
-                    <td colSpan="3" className="px-2 py-1.5 text-left text-gray-900">Grand Total</td>
-                    <td className="px-2 py-1.5 text-right text-gray-900">{grandTotalUnits}</td>
-                    <td className="px-2 py-1.5 text-right text-gray-900">${grandTotalAveragePrice.toLocaleString()}</td>
-                    <td className="px-2 py-1.5 text-right text-gray-900">${Math.round(grandTotalValue).toLocaleString()}</td>
+                  <tr className={`${grandTotalRowClass} text-xs`}>
+                    <td colSpan="3" className="px-2 py-2 text-left">Grand Total</td>
+                    <td className="px-2 py-2 text-right">{grandTotalUnits}</td>
+                    <td className="px-2 py-2 text-right">${grandTotalAveragePrice.toLocaleString()}</td>
+                    <td className="px-2 py-2 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
                   </tr>
                 </tbody>
               </table>

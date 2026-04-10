@@ -282,7 +282,7 @@ const DailySalesCount = () => {
               type="button"
               onClick={downloadCsv}
               disabled={filtered.length === 0}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1.5 disabled:opacity-50"
+              className="text-sm text-brand-navy-light hover:text-brand-navy font-medium flex items-center gap-1.5 disabled:opacity-50"
             >
               <i className="fas fa-download" aria-hidden="true" />
               Download CSV
