@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
+import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
 import { useAuth } from '../contexts/AuthContext';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -50,6 +51,9 @@ const InventoryReport = () => {
     year: ''
   });
 
+  /** Bumps when a new inventory fetch starts; ignore async results from superseded runs. */
+  const inventoryFetchGen = useRef(0);
+
   const loadClients = async () => {
     setClientsError(null);
     try {
@@ -68,8 +72,7 @@ const InventoryReport = () => {
       if (error) throw error;
       const list = data || [];
       setClients(list);
-      if (!selectedClientId && list.length > 0) setSelectedClientId(String(list[0].id));
-      if (list.length === 0) setSelectedClientId('');
+      setSelectedClientId((prev) => nextSelectedClientIdAfterLoad(list, prev));
     } catch (err) {
       console.error('Error loading clients:', err);
       setClients([]);
@@ -79,14 +82,23 @@ const InventoryReport = () => {
   };
 
   const loadInventoryData = async () => {
-    setLoading(true);
+    const gen = ++inventoryFetchGen.current;
     setMessage({ type: '', text: '' });
+    /* Without a chosen client, .in(assignedIds) alone returns all assigned dealers — mismatches the dropdown. */
+    if (isRestrictedByAssignment && assignedClientIds.length > 0 && !selectedClientId) {
+      setRawRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       let q = supabase.from('inventorydata').select('*');
       if (isRestrictedByAssignment) {
         if (assignedClientIds.length === 0) {
-          setRawRows([]);
-          setLoading(false);
+          if (gen === inventoryFetchGen.current) {
+            setRawRows([]);
+            setLoading(false);
+          }
           return;
         }
         q = q.in('customer_id', assignedClientIds);
@@ -97,14 +109,16 @@ const InventoryReport = () => {
         q.order('make', { ascending: true }).order('model', { ascending: true }),
         REQUEST_TIMEOUT_MS
       );
+      if (gen !== inventoryFetchGen.current) return;
       if (error) throw error;
       setRawRows(data || []);
     } catch (err) {
+      if (gen !== inventoryFetchGen.current) return;
       console.error('Error loading inventory:', err);
       setRawRows([]);
       setMessage({ type: 'error', text: err?.message || 'Failed to load inventory. Try again or refresh.' });
     } finally {
-      setLoading(false);
+      if (gen === inventoryFetchGen.current) setLoading(false);
     }
   };
 
@@ -113,8 +127,19 @@ const InventoryReport = () => {
   }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   useEffect(() => {
+    inventoryFetchGen.current += 1;
+    setRawRows([]);
+    setSelectedClientId('');
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    inventoryFetchGen.current += 1;
+    setRawRows([]);
+  }, [isRestrictedByAssignment, assignedClientIds.join(',')]);
+
+  useEffect(() => {
     loadInventoryData();
-  }, [selectedClientId, reportDate]);
+  }, [selectedClientId, reportDate, currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   const filteredRows = useMemo(() => {
     let rows = rawRows;

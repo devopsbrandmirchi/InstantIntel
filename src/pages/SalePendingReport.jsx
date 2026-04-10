@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
+import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
 import { useAuth } from '../contexts/AuthContext';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -84,6 +85,7 @@ const SalePendingReport = () => {
   const [sortAsc, setSortAsc] = useState(false);
   const [vinPopoverRowId, setVinPopoverRowId] = useState(null);
   const vinPopoverRef = useRef(null);
+  const pendingReportFetchGen = useRef(0);
 
   useEffect(() => {
     if (!vinPopoverRowId) return;
@@ -112,8 +114,7 @@ const SalePendingReport = () => {
       if (error) throw error;
       const list = data || [];
       setClients(list);
-      if (!selectedClientId && list.length > 0) setSelectedClientId(String(list[0].id));
-      if (list.length === 0) setSelectedClientId('');
+      setSelectedClientId((prev) => nextSelectedClientIdAfterLoad(list, prev));
     } catch (err) {
       console.error('Error loading clients:', err);
       setClients([]);
@@ -123,15 +124,23 @@ const SalePendingReport = () => {
   };
 
   const loadReportData = async () => {
-    setLoading(true);
+    const gen = ++pendingReportFetchGen.current;
     setMessage({ type: '', text: '' });
+    if (isRestrictedByAssignment && assignedClientIds.length > 0 && !selectedClientId) {
+      setRawRows([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       let q = supabase.from('soldoutvins').select('*').not('sold_date', 'is', null);
       if (reportDate) q = q.eq('sold_date', reportDate);
       if (isRestrictedByAssignment) {
         if (assignedClientIds.length === 0) {
-          setRawRows([]);
-          setLoading(false);
+          if (gen === pendingReportFetchGen.current) {
+            setRawRows([]);
+            setLoading(false);
+          }
           return;
         }
         q = q.in('customer_id', assignedClientIds);
@@ -141,14 +150,16 @@ const SalePendingReport = () => {
         q.order('sold_date', { ascending: false }).order('id', { ascending: true }),
         REQUEST_TIMEOUT_MS
       );
+      if (gen !== pendingReportFetchGen.current) return;
       if (error) throw error;
       setRawRows(data || []);
     } catch (err) {
+      if (gen !== pendingReportFetchGen.current) return;
       console.error('Error loading sale pending report:', err);
       setRawRows([]);
       setMessage({ type: 'error', text: err?.message || 'Failed to load sale pending report. Try again or refresh.' });
     } finally {
-      setLoading(false);
+      if (gen === pendingReportFetchGen.current) setLoading(false);
     }
   };
 
@@ -157,8 +168,19 @@ const SalePendingReport = () => {
   }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   useEffect(() => {
+    pendingReportFetchGen.current += 1;
+    setRawRows([]);
+    setSelectedClientId('');
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    pendingReportFetchGen.current += 1;
+    setRawRows([]);
+  }, [isRestrictedByAssignment, assignedClientIds.join(',')]);
+
+  useEffect(() => {
     loadReportData();
-  }, [selectedClientId, reportDate]);
+  }, [selectedClientId, reportDate, currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   const filteredRows = useMemo(() => {
     let rows = rawRows;

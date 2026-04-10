@@ -251,7 +251,7 @@ const InventoryComparisonReport = () => {
       setClients([]);
       setClientsError(err?.message || 'Failed to load clients.');
     }
-  }, [isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [isRestrictedByAssignment, assignedClientIds.join(','), currentUser?.id]);
 
   useEffect(() => {
     loadClients();
@@ -268,6 +268,10 @@ const InventoryComparisonReport = () => {
       return valid;
     });
   }, [clients]);
+
+  useEffect(() => {
+    setRawRows([]);
+  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   const loadInventory = useCallback(async () => {
     setMessage({ type: '', text: '' });
@@ -299,7 +303,13 @@ const InventoryComparisonReport = () => {
     } finally {
       setLoading(false);
     }
-  }, [reportDate, selectedClientIds.join(','), isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [
+    reportDate,
+    selectedClientIds.join(','),
+    isRestrictedByAssignment,
+    assignedClientIds.join(','),
+    currentUser?.id
+  ]);
 
   useEffect(() => {
     loadInventory();

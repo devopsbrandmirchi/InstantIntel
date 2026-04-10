@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
 
 const TAB_LIST = 'list';
 const TAB_GRID = 'grid';
@@ -45,9 +46,10 @@ const InventoryDailyCount = () => {
       ]);
       if (countRes.error) throw countRes.error;
       if (clientsRes.error) throw clientsRes.error;
+      const clientList = clientsRes.data || [];
       setCounts(countRes.data || []);
-      setClients(clientsRes.data || []);
-      if (!selectedClientId && (clientsRes.data || []).length > 0) setSelectedClientId('');
+      setClients(clientList);
+      setSelectedClientId((prev) => nextSelectedClientIdAfterLoad(clientList, prev, { allowAllClients: true }));
     } catch (err) {
       console.error('Inventory daily count load error:', err);
       setError(err?.message || 'Failed to load daily inventory count.');
