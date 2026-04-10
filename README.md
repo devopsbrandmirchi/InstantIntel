@@ -1,6 +1,6 @@
-# Business Management System - React Application
+# Instant Intel
 
-This is a React-based Business Management System converted from vanilla JavaScript.
+React web app for RV dealer operations: inventory and sales reporting, client assignments, and team management, backed by **Supabase** (auth and data).
 
 ## Setup Instructions
 
