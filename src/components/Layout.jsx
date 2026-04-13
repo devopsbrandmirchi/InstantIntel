@@ -19,6 +19,9 @@ const useMediaQuery = (query) => {
   return matches;
 };
 
+/** Set true when notifications are wired to real data. */
+const SHOW_NOTIFICATION_BELL = false;
+
 const Layout = ({ children }) => {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -148,68 +151,70 @@ const Layout = ({ children }) => {
         </div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setNotificationsOpen((o) => !o);
-                setUserMenuOpen(false);
-              }}
-              className="relative rounded-md p-2 text-white/90 hover:bg-white/10"
-              aria-label="Notifications"
-              aria-expanded={notificationsOpen}
-            >
-              <i className="fas fa-bell text-base" />
-              <span className="absolute right-1 top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
-                3
-              </span>
-            </button>
-            {notificationsOpen && (
-              <div className="absolute right-0 mt-1 w-72 max-h-[min(70vh,400px)] overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg sm:w-80 z-50">
-                <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-3 py-2">
-                  <span className="text-sm font-semibold text-gray-800">Notifications</span>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationsOpen(false)}
-                    className="rounded p-0.5 text-gray-400 hover:text-gray-600"
-                    aria-label="Close"
-                  >
-                    <i className="fas fa-times text-xs" />
-                  </button>
-                </div>
-                <div className="py-1">
-                  {[
-                    { id: 1, title: 'New client added', time: '2 min ago', unread: true },
-                    { id: 2, title: 'Inventory low on Item #4521', time: '1 hour ago', unread: true },
-                    { id: 3, title: 'Role permissions updated', time: 'Yesterday', unread: false }
-                  ].map((n) => (
+          {SHOW_NOTIFICATION_BELL && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setNotificationsOpen((o) => !o);
+                  setUserMenuOpen(false);
+                }}
+                className="relative rounded-md p-2 text-white/90 hover:bg-white/10"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+              >
+                <i className="fas fa-bell text-base" />
+                <span className="absolute right-1 top-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold text-white">
+                  3
+                </span>
+              </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-1 w-72 max-h-[min(70vh,400px)] overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg sm:w-80 z-50">
+                  <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-3 py-2">
+                    <span className="text-sm font-semibold text-gray-800">Notifications</span>
                     <button
-                      key={n.id}
                       type="button"
-                      className="flex w-full gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="rounded p-0.5 text-gray-400 hover:text-gray-600"
+                      aria-label="Close"
                     >
-                      <span
-                        className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.unread ? 'bg-brand-mint' : 'bg-transparent'}`}
-                      />
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate font-medium text-gray-900">{n.title}</span>
-                        <span className="mt-0.5 block text-[10px] text-gray-500">{n.time}</span>
-                      </span>
+                      <i className="fas fa-times text-xs" />
                     </button>
-                  ))}
+                  </div>
+                  <div className="py-1">
+                    {[
+                      { id: 1, title: 'New client added', time: '2 min ago', unread: true },
+                      { id: 2, title: 'Inventory low on Item #4521', time: '1 hour ago', unread: true },
+                      { id: 3, title: 'Role permissions updated', time: 'Yesterday', unread: false }
+                    ].map((n) => (
+                      <button
+                        key={n.id}
+                        type="button"
+                        className="flex w-full gap-2 px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-50"
+                      >
+                        <span
+                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${n.unread ? 'bg-brand-mint' : 'bg-transparent'}`}
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-gray-900">{n.title}</span>
+                          <span className="mt-0.5 block text-[10px] text-gray-500">{n.time}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="border-t border-gray-100 px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="text-xs font-medium text-brand-mint hover:text-brand-navy"
+                    >
+                      View all notifications
+                    </button>
+                  </div>
                 </div>
-                <div className="border-t border-gray-100 px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() => setNotificationsOpen(false)}
-                    className="text-xs font-medium text-brand-mint hover:text-brand-navy"
-                  >
-                    View all notifications
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           <div className="relative">
             <button

@@ -289,6 +289,24 @@ const InventoryReport = () => {
   const labelClass = 'block text-xs font-medium text-gray-700 mb-1';
   const cardTitleClass = 'text-xs font-semibold text-brand-navy mb-2 pb-1 border-b border-gray-200';
   const grandTotalRowClass = 'font-bold bg-brand-navy text-white';
+  /** Same widths on body + footer tables so Grand Total aligns with columns above. */
+  const aggregateTableColgroup = (
+    <colgroup>
+      <col style={{ width: '50%' }} />
+      <col style={{ width: '18%' }} />
+      <col style={{ width: '32%' }} />
+    </colgroup>
+  );
+  const inventoryListColgroup = (
+    <colgroup>
+      <col style={{ width: '16%' }} />
+      <col style={{ width: '24%' }} />
+      <col style={{ width: '10%' }} />
+      <col style={{ width: '9%' }} />
+      <col style={{ width: '20.5%' }} />
+      <col style={{ width: '20.5%' }} />
+    </colgroup>
+  );
 
   const selectedClientName = selectedClientId
     ? (clients.find((c) => String(c.id) === selectedClientId)?.full_name || 'Client')
@@ -430,16 +448,17 @@ const InventoryReport = () => {
         <p className="text-gray-500 py-4">Loading report...</p>
       ) : (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm">
-              <h3 className={cardTitleClass}>Type</h3>
-              <div className="h-[200px] sm:h-[220px]">
+          {/* lg: fixed row height so Type / Manufacturer / Condition+Location align; each column scrolls inside */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 lg:min-h-0 lg:items-stretch lg:h-[clamp(280px,calc(100dvh-15.5rem),960px)]">
+            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex flex-col min-h-0 lg:h-full">
+              <h3 className={`${cardTitleClass} flex-shrink-0`}>Type</h3>
+              <div className="h-[200px] sm:h-[220px] flex-shrink-0">
                 {typeChartData ? <Doughnut data={typeChartData} options={typeChartOptions} /> : <p className="text-gray-500 text-xs">No data</p>}
               </div>
               {type.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-gray-100">
-                  <p className="text-xs font-medium text-gray-600 mb-1.5">By percentage</p>
-                  <ul className="space-y-1 text-xs text-gray-700">
+                <div className="mt-2 pt-2 border-t border-gray-100 flex flex-col min-h-0 lg:flex-1 lg:min-h-0">
+                  <p className="text-xs font-medium text-gray-600 mb-1.5 flex-shrink-0">By percentage</p>
+                  <ul className="space-y-1 text-xs text-gray-700 lg:overflow-y-auto lg:min-h-0 lg:pr-1">
                     {type.map((t, idx) => {
                       const pct = grandTotalUnits ? ((t.units / grandTotalUnits) * 100).toFixed(1) : '0';
                       return (
@@ -454,88 +473,112 @@ const InventoryReport = () => {
               )}
             </div>
 
-            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm">
-              <h3 className={cardTitleClass}>Manufacturer</h3>
-              <div className="overflow-x-auto">
-                <table className="min-w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Manufacturer</th>
-                      <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
-                      <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {manufacturer.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="py-1 px-1.5 text-gray-700">{item.name}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
-                        <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+            <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex flex-col min-h-0 lg:h-full">
+              <h3 className={`${cardTitleClass} flex-shrink-0`}>Manufacturer</h3>
+              <div className="flex min-h-0 flex-col overflow-x-auto lg:flex-1">
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                  <table className="w-full min-w-full table-fixed text-xs">
+                    {aggregateTableColgroup}
+                    <thead className="sticky top-0 z-[1] bg-white shadow-[0_1px_0_0_rgb(229_231_235)]">
+                      <tr className="border-b border-gray-200">
+                        <th className="py-1 pl-1.5 pr-1 text-left font-semibold text-gray-900">Manufacturer</th>
+                        <th className="py-1 px-1.5 text-right font-semibold text-gray-900">Units</th>
+                        <th className="py-1 pl-1.5 pr-1.5 text-right font-semibold text-gray-900">Total Value</th>
                       </tr>
-                    ))}
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {manufacturer.map((item, idx) => (
+                        <tr key={idx}>
+                          <td className="break-words py-1 pl-1.5 pr-1 text-gray-700">{item.name}</td>
+                          <td className="py-1 px-1.5 text-right text-gray-700 tabular-nums">{item.units}</td>
+                          <td className="py-1 pl-1.5 pr-1.5 text-right text-gray-700 tabular-nums">${Math.round(item.totalValue).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <table className="w-full min-w-full flex-shrink-0 table-fixed border-t border-gray-200 text-xs" aria-label="Manufacturer totals">
+                  {aggregateTableColgroup}
+                  <tbody>
                     <tr className={grandTotalRowClass}>
-                      <td className="py-1.5 px-1.5">Grand Total</td>
-                      <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
-                      <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                      <td className="py-1.5 pl-1.5 pr-1">Grand Total</td>
+                      <td className="py-1.5 px-1.5 text-right tabular-nums">{grandTotalUnits}</td>
+                      <td className="py-1.5 pl-1.5 pr-1.5 text-right tabular-nums">${Math.round(grandTotalValue).toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 min-h-0">
-              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex-1 min-h-0">
-                <h3 className={cardTitleClass}>Condition</h3>
-                <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
-                  <table className="min-w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Condition</th>
-                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
-                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {condition.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="py-1 px-1.5 text-gray-700">{item.name || ''}</td>
-                          <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
-                          <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+            <div className="flex flex-col gap-3 min-h-0 lg:h-full lg:min-h-0">
+              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex flex-col min-h-0 lg:flex-1 lg:min-h-0">
+                <h3 className={`${cardTitleClass} flex-shrink-0`}>Condition</h3>
+                <div className="flex min-h-0 max-h-[220px] flex-col overflow-x-auto lg:max-h-none lg:flex-1">
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <table className="w-full min-w-full table-fixed text-xs">
+                      {aggregateTableColgroup}
+                      <thead className="sticky top-0 z-[1] bg-white shadow-[0_1px_0_0_rgb(229_231_235)]">
+                        <tr className="border-b border-gray-200">
+                          <th className="py-1 pl-1.5 pr-1 text-left font-semibold text-gray-900">Condition</th>
+                          <th className="py-1 px-1.5 text-right font-semibold text-gray-900">Units</th>
+                          <th className="py-1 pl-1.5 pr-1.5 text-right font-semibold text-gray-900">Total Value</th>
                         </tr>
-                      ))}
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {condition.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="break-words py-1 pl-1.5 pr-1 text-gray-700">{item.name || ''}</td>
+                            <td className="py-1 px-1.5 text-right text-gray-700 tabular-nums">{item.units}</td>
+                            <td className="py-1 pl-1.5 pr-1.5 text-right text-gray-700 tabular-nums">${Math.round(item.totalValue).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <table className="w-full min-w-full flex-shrink-0 table-fixed border-t border-gray-200 text-xs" aria-label="Condition totals">
+                    {aggregateTableColgroup}
+                    <tbody>
                       <tr className={grandTotalRowClass}>
-                        <td className="py-1.5 px-1.5">Grand Total</td>
-                        <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
-                        <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                        <td className="py-1.5 pl-1.5 pr-1">Grand Total</td>
+                        <td className="py-1.5 px-1.5 text-right tabular-nums">{grandTotalUnits}</td>
+                        <td className="py-1.5 pl-1.5 pr-1.5 text-right tabular-nums">${Math.round(grandTotalValue).toLocaleString()}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
               </div>
 
-              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex-1 min-h-0">
-                <h3 className={cardTitleClass}>Location</h3>
-                <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
-                  <table className="min-w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-1 px-1.5 font-semibold text-gray-900">Location</th>
-                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Units</th>
-                        <th className="text-right py-1 px-1.5 font-semibold text-gray-900">Total Value</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {location.map((item, idx) => (
-                        <tr key={idx}>
-                          <td className="py-1 px-1.5 text-gray-700">{item.name}</td>
-                          <td className="py-1 px-1.5 text-right text-gray-700">{item.units}</td>
-                          <td className="py-1 px-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
+              <div className="bg-white border border-gray-200 rounded p-3 shadow-sm flex flex-col min-h-0 lg:flex-1 lg:min-h-0">
+                <h3 className={`${cardTitleClass} flex-shrink-0`}>Location</h3>
+                <div className="flex min-h-0 max-h-[220px] flex-col overflow-x-auto lg:max-h-none lg:flex-1">
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <table className="w-full min-w-full table-fixed text-xs">
+                      {aggregateTableColgroup}
+                      <thead className="sticky top-0 z-[1] bg-white shadow-[0_1px_0_0_rgb(229_231_235)]">
+                        <tr className="border-b border-gray-200">
+                          <th className="py-1 pl-1.5 pr-1 text-left font-semibold text-gray-900">Location</th>
+                          <th className="py-1 px-1.5 text-right font-semibold text-gray-900">Units</th>
+                          <th className="py-1 pl-1.5 pr-1.5 text-right font-semibold text-gray-900">Total Value</th>
                         </tr>
-                      ))}
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {location.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="break-words py-1 pl-1.5 pr-1 text-gray-700">{item.name}</td>
+                            <td className="py-1 px-1.5 text-right text-gray-700 tabular-nums">{item.units}</td>
+                            <td className="py-1 pl-1.5 pr-1.5 text-right text-gray-700 tabular-nums">${Math.round(item.totalValue).toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <table className="w-full min-w-full flex-shrink-0 table-fixed border-t border-gray-200 text-xs" aria-label="Location totals">
+                    {aggregateTableColgroup}
+                    <tbody>
                       <tr className={grandTotalRowClass}>
-                        <td className="py-1.5 px-1.5">Grand Total</td>
-                        <td className="py-1.5 px-1.5 text-right">{grandTotalUnits}</td>
-                        <td className="py-1.5 px-1.5 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                        <td className="py-1.5 pl-1.5 pr-1">Grand Total</td>
+                        <td className="py-1.5 px-1.5 text-right tabular-nums">{grandTotalUnits}</td>
+                        <td className="py-1.5 pl-1.5 pr-1.5 text-right tabular-nums">${Math.round(grandTotalValue).toLocaleString()}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -544,52 +587,62 @@ const InventoryReport = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-            <div className="bg-brand-navy text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex max-h-[clamp(280px,min(48dvh,640px),800px)] min-h-0 flex-col overflow-hidden rounded border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-shrink-0 flex-wrap items-center justify-between gap-2 bg-brand-navy px-4 py-2 text-white">
               <h3 className="text-sm font-bold">Inventory List</h3>
               <button
                 type="button"
                 onClick={downloadInventoryListCsv}
                 disabled={inventoryList.length === 0}
-                className="px-2 py-1 text-xs rounded bg-white/20 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                className="flex items-center gap-1 rounded bg-white/20 px-2 py-1 text-xs hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <i className="fas fa-download" />
                 Download CSV
               </button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-xs">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-2 py-1.5 text-left font-semibold text-gray-700 uppercase">Manufacturer</th>
-                    <th className="px-2 py-1.5 text-left font-semibold text-gray-700 uppercase">Brand / Model</th>
-                    <th className="px-2 py-1.5 text-center font-semibold text-gray-700 uppercase">Condition</th>
-                    <th className="px-2 py-1.5 text-right font-semibold text-gray-700 uppercase">Units</th>
-                    <th className="px-2 py-1.5 text-right font-semibold text-gray-700 uppercase">Average Price</th>
-                    <th className="px-2 py-1.5 text-right font-semibold text-gray-700 uppercase">Total Value</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {inventoryList.map((item, idx) => {
-                    const showManufacturer = idx === 0 || inventoryList[idx - 1].manufacturer !== item.manufacturer;
-                    return (
-                      <tr key={idx} className={showManufacturer ? 'bg-gray-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className={`px-2 py-1.5 ${showManufacturer ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
-                          {showManufacturer ? item.manufacturer : ''}
-                        </td>
-                        <td className="px-2 py-1.5 text-gray-700">{item.brandModel}</td>
-                        <td className="px-2 py-1.5 text-center text-gray-700">{item.condition}</td>
-                        <td className="px-2 py-1.5 text-right text-gray-700">{item.units}</td>
-                        <td className="px-2 py-1.5 text-right text-gray-700">${item.averagePrice.toLocaleString()}</td>
-                        <td className="px-2 py-1.5 text-right text-gray-700">${Math.round(item.totalValue).toLocaleString()}</td>
-                      </tr>
-                    );
-                  })}
+            <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                <table className="w-full min-w-full table-fixed text-xs">
+                  {inventoryListColgroup}
+                  <thead className="sticky top-0 z-[1] bg-gray-50 shadow-[0_1px_0_0_rgb(229_231_235)]">
+                    <tr>
+                      <th className="px-2 py-1.5 text-left font-semibold uppercase text-gray-700">Manufacturer</th>
+                      <th className="px-2 py-1.5 text-left font-semibold uppercase text-gray-700">Brand / Model</th>
+                      <th className="px-2 py-1.5 text-center font-semibold uppercase text-gray-700">Condition</th>
+                      <th className="px-2 py-1.5 text-right font-semibold uppercase text-gray-700">Units</th>
+                      <th className="px-2 py-1.5 text-right font-semibold uppercase text-gray-700">Average Price</th>
+                      <th className="px-2 py-1.5 text-right font-semibold uppercase text-gray-700">Total Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 bg-white">
+                    {inventoryList.map((item, idx) => {
+                      const showManufacturer = idx === 0 || inventoryList[idx - 1].manufacturer !== item.manufacturer;
+                      return (
+                        <tr key={idx} className={showManufacturer ? 'bg-gray-50' : idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className={`break-words px-2 py-1.5 ${showManufacturer ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>
+                            {showManufacturer ? item.manufacturer : ''}
+                          </td>
+                          <td className="break-words px-2 py-1.5 text-gray-700">{item.brandModel}</td>
+                          <td className="px-2 py-1.5 text-center text-gray-700">{item.condition}</td>
+                          <td className="px-2 py-1.5 text-right text-gray-700 tabular-nums">{item.units}</td>
+                          <td className="px-2 py-1.5 text-right text-gray-700 tabular-nums">${item.averagePrice.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-right text-gray-700 tabular-nums">${Math.round(item.totalValue).toLocaleString()}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <table className="w-full min-w-full flex-shrink-0 table-fixed border-t border-gray-200 text-xs" aria-label="Inventory list totals">
+                {inventoryListColgroup}
+                <tbody>
                   <tr className={`${grandTotalRowClass} text-xs`}>
-                    <td colSpan="3" className="px-2 py-2 text-left">Grand Total</td>
-                    <td className="px-2 py-2 text-right">{grandTotalUnits}</td>
-                    <td className="px-2 py-2 text-right">${grandTotalAveragePrice.toLocaleString()}</td>
-                    <td className="px-2 py-2 text-right">${Math.round(grandTotalValue).toLocaleString()}</td>
+                    <td colSpan={3} className="px-2 py-2 text-left">
+                      Grand Total
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums">{grandTotalUnits}</td>
+                    <td className="px-2 py-2 text-right tabular-nums">${grandTotalAveragePrice.toLocaleString()}</td>
+                    <td className="px-2 py-2 text-right tabular-nums">${Math.round(grandTotalValue).toLocaleString()}</td>
                   </tr>
                 </tbody>
               </table>

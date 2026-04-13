@@ -34,6 +34,13 @@ const CHART_COLORS = [
   'rgb(168, 85, 247)', 'rgb(236, 72, 153)', 'rgb(20, 184, 166)', 'rgb(249, 115, 22)'
 ];
 
+/** Whole numbers with thousands separators (US: 1,234,567). */
+function formatUsInteger(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return '0';
+  return Math.trunc(x).toLocaleString('en-US');
+}
+
 const Dashboard = () => {
   const { currentUser } = useAuth();
   const isAdmin = (currentUser?.role || '').toLowerCase() === 'admin';
@@ -471,7 +478,8 @@ const Dashboard = () => {
             <div className="ml-3">
               <p className="text-gray-600 text-xs">Clients</p>
               <p className="text-lg font-bold text-gray-800">
-                {stats.activeClients} <span className="font-normal text-gray-500">/ {stats.totalClients}</span>
+                {formatUsInteger(stats.activeClients)}{' '}
+                <span className="font-normal text-gray-500">/ {formatUsInteger(stats.totalClients)}</span>
               </p>
               <p className="text-gray-500 text-[10px] mt-0.5">active of total</p>
             </div>
@@ -484,8 +492,10 @@ const Dashboard = () => {
             </div>
             <div className="ml-3">
               <p className="text-gray-600 text-xs">Total Inventory</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalInventory}</p>
-              <p className="text-gray-500 text-[10px] mt-0.5">from {stats.customersWithInventory} customer{stats.customersWithInventory !== 1 ? 's' : ''}</p>
+              <p className="text-lg font-bold text-gray-800">{formatUsInteger(stats.totalInventory)}</p>
+              <p className="text-gray-500 text-[10px] mt-0.5">
+                from {formatUsInteger(stats.customersWithInventory)} customer{stats.customersWithInventory !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -496,8 +506,11 @@ const Dashboard = () => {
             </div>
             <div className="ml-3">
               <p className="text-gray-600 text-xs">Processed Sales</p>
-              <p className="text-lg font-bold text-gray-800">{(Number(stats.totalProcessedSales) || 0).toLocaleString()}</p>
-              <p className="text-gray-500 text-[10px] mt-0.5">from {Number(stats.customersInProcessedSales) || 0} customer{(Number(stats.customersInProcessedSales) || 0) !== 1 ? 's' : ''}</p>
+              <p className="text-lg font-bold text-gray-800">{formatUsInteger(stats.totalProcessedSales)}</p>
+              <p className="text-gray-500 text-[10px] mt-0.5">
+                from {formatUsInteger(stats.customersInProcessedSales)} customer
+                {(Number(stats.customersInProcessedSales) || 0) !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
         </div>
@@ -510,7 +523,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-gray-600 text-xs">Total Roles</p>
-                  <p className="text-lg font-bold text-gray-800">{stats.totalRoles}</p>
+                  <p className="text-lg font-bold text-gray-800">{formatUsInteger(stats.totalRoles)}</p>
                 </div>
               </div>
             </div>
@@ -521,7 +534,7 @@ const Dashboard = () => {
                 </div>
                 <div className="ml-3">
                   <p className="text-gray-600 text-xs">Active Users</p>
-                  <p className="text-lg font-bold text-gray-800">{stats.activeUsers}</p>
+                  <p className="text-lg font-bold text-gray-800">{formatUsInteger(stats.activeUsers)}</p>
                 </div>
               </div>
             </div>
