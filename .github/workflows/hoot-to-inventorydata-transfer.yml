@@ -10,10 +10,10 @@
 
 name: Hoot to inventorydata transfer
 
+# Cron disabled temporarily. Re-add under `on:` when ready (e.g. after import cron):
+#   schedule:
+#     - cron: '45 4 * * *'   # daily 04:45 UTC
 on:
-  schedule:
-    # Run after Hoot import workflow (04:15 UTC): here 04:45 UTC daily.
-    - cron: '45 4 * * *'
   workflow_dispatch:
     inputs:
       transfer_date:

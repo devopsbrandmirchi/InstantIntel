@@ -13,10 +13,10 @@
 
 name: Hoot inventory import
 
+# Cron disabled temporarily. Re-add under `on:` when ready:
+#   schedule:
+#     - cron: '15 4 * * *'   # daily 04:15 UTC
 on:
-  schedule:
-    # Daily 04:15 UTC — adjust cron as needed (minute hour day month weekday)
-    - cron: '15 4 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
