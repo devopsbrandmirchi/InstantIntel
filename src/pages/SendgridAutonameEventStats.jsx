@@ -198,7 +198,7 @@ const SendgridAutonameEventStats = () => {
             <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)} className={inputClass}>
               <option value="all">All events</option>
               <option value="open">Open</option>
-              <option value="click">Click</option>
+              <option value="click">Click</option>`r`n              <option value="processed">Processed</option>`r`n              <option value="delivered">Delivered</option>`r`n              <option value="dropped">Dropped</option>
             </select>
           </div>
           <button
@@ -372,3 +372,4 @@ const SendgridAutonameEventStats = () => {
 };
 
 export default SendgridAutonameEventStats;
+

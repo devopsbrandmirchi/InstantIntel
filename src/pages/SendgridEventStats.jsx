@@ -20,7 +20,7 @@ function escapeCsvCell(val) {
 const SendgridEventStats = () => {
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 30);
+    d.setDate(1);
     return fmtDate(d);
   });
   const [dateTo, setDateTo] = useState(() => fmtDate(new Date()));
@@ -185,7 +185,7 @@ const SendgridEventStats = () => {
     <div className="max-w-[100rem] mx-auto">
       <div className="mb-5">
         <h2 className="text-xl font-semibold text-slate-800 tracking-tight">SendGrid event statistics</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Default view shows the last 30 days. Filter by event, mc_auto_name presence, and export CSV.</p>
+        <p className="text-sm text-slate-500 mt-0.5">Default view shows the current month. Filter by event, mc_auto_name presence, and export CSV.</p>
         {hitRowCap && (
           <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
             <i className="fas fa-triangle-exclamation" aria-hidden />
@@ -209,7 +209,7 @@ const SendgridEventStats = () => {
             <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)} className={inputClass}>
               <option value="all">All events</option>
               <option value="open">Open</option>
-              <option value="click">Click</option>
+              <option value="click">Click</option>`r`n              <option value="processed">Processed</option>`r`n              <option value="delivered">Delivered</option>`r`n              <option value="dropped">Dropped</option>
             </select>
           </div>
           <div>
@@ -409,3 +409,4 @@ const SendgridEventStats = () => {
 };
 
 export default SendgridEventStats;
+
