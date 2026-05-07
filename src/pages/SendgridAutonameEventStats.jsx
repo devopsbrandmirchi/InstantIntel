@@ -20,7 +20,7 @@ function escapeCsvCell(val) {
 const SendgridAutonameEventStats = () => {
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
-    d.setDate(d.getDate() - 30);
+    d.setDate(1);
     return fmtDate(d);
   });
   const [dateTo, setDateTo] = useState(() => fmtDate(new Date()));
@@ -173,7 +173,7 @@ const SendgridAutonameEventStats = () => {
         <h2 className="text-xl font-semibold text-slate-800 tracking-tight">SendGrid autoname event statistics</h2>
         <p className="text-sm text-slate-500 mt-0.5">
           Data from <code className="text-xs bg-slate-100 px-1 rounded">sendgrid_events_autoname</code> — every row has a non-empty{' '}
-          <code className="text-xs bg-slate-100 px-1 rounded">mc_auto_name</code> (autoname webhook). Default: last 30 days.
+          <code className="text-xs bg-slate-100 px-1 rounded">mc_auto_name</code> (autoname webhook). Default: current month.
         </p>
         {hitRowCap && (
           <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
