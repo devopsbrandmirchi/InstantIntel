@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
 
 const REQUEST_TIMEOUT_MS = 20000;
+const PAGE_SIZE = 1000;
+const MAX_FETCH_ROWS = 50000;
+const LIST_PAGE_SIZE = 500;
 
 function fmtDate(d) {
   return d.toISOString().slice(0, 10);
@@ -25,25 +28,41 @@ const SendgridAutonameEventStats = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [hitRowCap, setHitRowCap] = useState(false);
+  const [listPage, setListPage] = useState(1);
 
   const loadRows = async () => {
     setLoading(true);
     setError('');
+    setHitRowCap(false);
     try {
-      let q = supabase
-        .from('sendgrid_events_autoname')
-        .select('id, entry_date, created_at, email, event, mc_auto_name, ip, url, sg_event_id, sg_message_id, template_id')
-        .gte('entry_date', dateFrom)
-        .lte('entry_date', dateTo)
-        .order('entry_date', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(5000);
+      const buildQuery = () => {
+        let q = supabase
+          .from('sendgrid_events_autoname')
+          .select('id, entry_date, created_at, email, event, mc_auto_name, ip, url, sg_event_id, sg_message_id, template_id')
+          .gte('entry_date', dateFrom)
+          .lte('entry_date', dateTo)
+          .order('entry_date', { ascending: false })
+          .order('id', { ascending: false });
+        if (eventFilter !== 'all') q = q.eq('event', eventFilter);
+        return q;
+      };
 
-      if (eventFilter !== 'all') q = q.eq('event', eventFilter);
-
-      const { data, error: queryError } = await withTimeout(q, REQUEST_TIMEOUT_MS);
-      if (queryError) throw queryError;
-      setRows(data || []);
+      const allRows = [];
+      let exhausted = false;
+      for (let from = 0; from < MAX_FETCH_ROWS; from += PAGE_SIZE) {
+        const to = from + PAGE_SIZE - 1;
+        const { data, error: queryError } = await withTimeout(buildQuery().range(from, to), REQUEST_TIMEOUT_MS);
+        if (queryError) throw queryError;
+        const chunk = data || [];
+        allRows.push(...chunk);
+        if (chunk.length < PAGE_SIZE) {
+          exhausted = true;
+          break;
+        }
+      }
+      if (!exhausted && allRows.length >= MAX_FETCH_ROWS) setHitRowCap(true);
+      setRows(allRows);
     } catch (e) {
       console.error(e);
       setRows([]);
@@ -56,6 +75,22 @@ const SendgridAutonameEventStats = () => {
   useEffect(() => {
     loadRows();
   }, [dateFrom, dateTo, eventFilter]);
+
+  useEffect(() => {
+    setListPage(1);
+  }, [dateFrom, dateTo, eventFilter, rows.length]);
+
+  const listTotalPages = useMemo(
+    () => Math.max(1, Math.ceil(rows.length / LIST_PAGE_SIZE)),
+    [rows.length]
+  );
+
+  const listPageSafe = Math.min(Math.max(listPage, 1), listTotalPages);
+
+  const pagedListingRows = useMemo(() => {
+    const start = (listPageSafe - 1) * LIST_PAGE_SIZE;
+    return rows.slice(start, start + LIST_PAGE_SIZE);
+  }, [rows, listPageSafe]);
 
   const stats = useMemo(() => {
     let openCount = 0;
@@ -140,6 +175,12 @@ const SendgridAutonameEventStats = () => {
           Data from <code className="text-xs bg-slate-100 px-1 rounded">sendgrid_events_autoname</code> — every row has a non-empty{' '}
           <code className="text-xs bg-slate-100 px-1 rounded">mc_auto_name</code> (autoname webhook). Default: last 30 days.
         </p>
+        {hitRowCap && (
+          <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            <i className="fas fa-triangle-exclamation" aria-hidden />
+            Showing only the first <span className="font-semibold">{MAX_FETCH_ROWS.toLocaleString()}</span> events for this filter range. Narrow the date range to see complete totals.
+          </p>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-5">
@@ -256,8 +297,37 @@ const SendgridAutonameEventStats = () => {
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80">
+        <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-slate-700">Event listing</h3>
+          {!loading && rows.length > 0 && (
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-600 tabular-nums">
+                Showing {(listPageSafe - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listPageSafe * LIST_PAGE_SIZE, rows.length)} of{' '}
+                {rows.length.toLocaleString()}
+              </span>
+              <div className="inline-flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setListPage((p) => Math.max(1, p - 1))}
+                  disabled={listPageSafe <= 1}
+                  className="h-8 px-2 rounded border border-slate-300 bg-white text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Prev
+                </button>
+                <span className="text-xs text-slate-700 tabular-nums px-1">
+                  {listPageSafe.toLocaleString()} / {listTotalPages.toLocaleString()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setListPage((p) => Math.min(listTotalPages, p + 1))}
+                  disabled={listPageSafe >= listTotalPages}
+                  className="h-8 px-2 rounded border border-slate-300 bg-white text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         {loading ? (
           <div className="py-10 text-center text-slate-500 text-sm">
@@ -281,7 +351,7 @@ const SendgridAutonameEventStats = () => {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, idx) => (
+                {pagedListingRows.map((r, idx) => (
                   <tr key={r.id} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                     <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">{r.entry_date || ''}</td>
                     <td className="px-3 py-2.5 text-slate-700">{r.event || ''}</td>
