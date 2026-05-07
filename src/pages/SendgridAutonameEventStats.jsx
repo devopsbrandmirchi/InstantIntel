@@ -25,6 +25,7 @@ const SendgridAutonameEventStats = () => {
   });
   const [dateTo, setDateTo] = useState(() => fmtDate(new Date()));
   const [eventFilter, setEventFilter] = useState('all');
+  const [mcAutoNameFilter, setMcAutoNameFilter] = useState('all');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,21 +77,31 @@ const SendgridAutonameEventStats = () => {
     loadRows();
   }, [dateFrom, dateTo, eventFilter]);
 
+  const availableMcAutoNames = useMemo(
+    () => [...new Set(rows.map((r) => (r.mc_auto_name || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+
+  const filteredRows = useMemo(() => {
+    if (mcAutoNameFilter === 'all') return rows;
+    return rows.filter((r) => (r.mc_auto_name || '').trim() === mcAutoNameFilter);
+  }, [rows, mcAutoNameFilter]);
+
   useEffect(() => {
     setListPage(1);
-  }, [dateFrom, dateTo, eventFilter, rows.length]);
+  }, [dateFrom, dateTo, eventFilter, mcAutoNameFilter, rows.length]);
 
   const listTotalPages = useMemo(
-    () => Math.max(1, Math.ceil(rows.length / LIST_PAGE_SIZE)),
-    [rows.length]
+    () => Math.max(1, Math.ceil(filteredRows.length / LIST_PAGE_SIZE)),
+    [filteredRows.length]
   );
 
   const listPageSafe = Math.min(Math.max(listPage, 1), listTotalPages);
 
   const pagedListingRows = useMemo(() => {
     const start = (listPageSafe - 1) * LIST_PAGE_SIZE;
-    return rows.slice(start, start + LIST_PAGE_SIZE);
-  }, [rows, listPageSafe]);
+    return filteredRows.slice(start, start + LIST_PAGE_SIZE);
+  }, [filteredRows, listPageSafe]);
 
   const stats = useMemo(() => {
     let openCount = 0;
@@ -98,7 +109,7 @@ const SendgridAutonameEventStats = () => {
     let otherCount = 0;
     const nameSet = new Set();
     const emailSet = new Set();
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const ev = (r.event || '').toLowerCase();
       if (ev === 'open') openCount += 1;
       else if (ev === 'click') clickCount += 1;
@@ -117,11 +128,11 @@ const SendgridAutonameEventStats = () => {
       distinctMcAutoName: nameSet.size,
       distinctEmailCount: emailSet.size,
     };
-  }, [rows]);
+  }, [filteredRows]);
 
   const dailySummary = useMemo(() => {
     const m = {};
-    rows.forEach((r) => {
+    filteredRows.forEach((r) => {
       const d = r.entry_date || '';
       if (!d) return;
       if (!m[d]) m[d] = { date: d, total: 0, open: 0, click: 0 };
@@ -131,7 +142,7 @@ const SendgridAutonameEventStats = () => {
       if (ev === 'click') m[d].click += 1;
     });
     return Object.values(m).sort((a, b) => b.date.localeCompare(a.date));
-  }, [rows]);
+  }, [filteredRows]);
 
   const downloadCsv = () => {
     const headers = [
@@ -149,7 +160,7 @@ const SendgridAutonameEventStats = () => {
     ];
     const csvLines = [
       headers.join(','),
-      ...rows.map((r) =>
+      ...filteredRows.map((r) =>
         headers
           .map((h) => escapeCsvCell(r[h]))
           .join(','),
@@ -160,7 +171,7 @@ const SendgridAutonameEventStats = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `sendgrid-autoname-events-${dateFrom}-to-${dateTo}-${eventFilter}.csv`;
+    a.download = `sendgrid-autoname-events-${dateFrom}-to-${dateTo}-${eventFilter}-${mcAutoNameFilter}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -198,7 +209,19 @@ const SendgridAutonameEventStats = () => {
             <select value={eventFilter} onChange={(e) => setEventFilter(e.target.value)} className={inputClass}>
               <option value="all">All events</option>
               <option value="open">Open</option>
-              <option value="click">Click</option>`r`n              <option value="processed">Processed</option>`r`n              <option value="delivered">Delivered</option>`r`n              <option value="dropped">Dropped</option>
+              <option value="click">Click</option>
+              <option value="processed">Processed</option>
+              <option value="delivered">Delivered</option>
+              <option value="dropped">Dropped</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">mc_auto_name</label>
+            <select value={mcAutoNameFilter} onChange={(e) => setMcAutoNameFilter(e.target.value)} className={inputClass}>
+              <option value="all">All names</option>
+              {availableMcAutoNames.map((name) => (
+                <option key={name} value={name}>{name}</option>
+              ))}
             </select>
           </div>
           <button
@@ -213,7 +236,7 @@ const SendgridAutonameEventStats = () => {
           <button
             type="button"
             onClick={downloadCsv}
-            disabled={rows.length === 0}
+            disabled={filteredRows.length === 0}
             className="px-3 py-2 text-sm rounded bg-brand-navy text-white hover:bg-brand-navy-light disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <i className="fas fa-download" />
@@ -299,11 +322,11 @@ const SendgridAutonameEventStats = () => {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-sm font-semibold text-slate-700">Event listing</h3>
-          {!loading && rows.length > 0 && (
+          {!loading && filteredRows.length > 0 && (
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-600 tabular-nums">
-                Showing {(listPageSafe - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listPageSafe * LIST_PAGE_SIZE, rows.length)} of{' '}
-                {rows.length.toLocaleString()}
+                Showing {(listPageSafe - 1) * LIST_PAGE_SIZE + 1}–{Math.min(listPageSafe * LIST_PAGE_SIZE, filteredRows.length)} of{' '}
+                {filteredRows.length.toLocaleString()}
               </span>
               <div className="inline-flex items-center gap-1">
                 <button
@@ -334,7 +357,7 @@ const SendgridAutonameEventStats = () => {
             <i className="fas fa-spinner fa-spin mr-2" />
             Loading events...
           </div>
-        ) : rows.length === 0 ? (
+        ) : filteredRows.length === 0 ? (
           <div className="py-10 text-center text-slate-500 text-sm">No events found for selected filters.</div>
         ) : (
           <div className="overflow-x-auto">
