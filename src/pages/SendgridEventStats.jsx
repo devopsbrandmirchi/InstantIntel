@@ -308,9 +308,9 @@ const SendgridEventStats = () => {
         ) : dailySummary.length === 0 ? (
           <div className="py-10 text-center text-slate-500 text-sm">No events found for selected filters.</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="max-h-[24rem] overflow-auto">
             <table className="w-full text-sm">
-              <thead className="bg-[#1e3a5f] text-white">
+              <thead className="sticky top-0 z-[1] bg-[#1e3a5f] text-white">
                 <tr>
                   <th className="px-4 py-2.5 text-left font-semibold">Date</th>
                   <th className="px-4 py-2.5 text-right font-semibold">Total</th>
