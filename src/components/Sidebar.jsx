@@ -1,25 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { flushSync } from 'react-dom';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const REPORT_PATHS = [
   '/inventory-report',
-  '/inventory-comparison',
-  '/sales-report',
   '/sale-pending-report',
+  '/sales-report',
+  '/inventory-comparison',
   '/inventory-daily-count',
   '/daily-sales-count'
 ];
 
 const REPORT_LINKS = [
   { to: '/inventory-report', label: 'Inventory Report', icon: 'fas fa-file-alt' },
-  { to: '/inventory-comparison', label: 'Inventory comparison', icon: 'fas fa-columns' },
+  { to: '/sale-pending-report', label: 'Sale Pending Report', icon: 'fas fa-clock' },
   { to: '/sales-report', label: 'Sales Report', icon: 'fas fa-chart-line' },
-  { to: '/sale-pending-report', label: 'Sale pending report', icon: 'fas fa-clock' },
+  { to: '/inventory-comparison', label: 'Inventory Comparison', icon: 'fas fa-columns' },
   { to: '/inventory-daily-count', label: 'Daily Inventory Count', icon: 'fas fa-list-ol' },
   { to: '/daily-sales-count', label: 'Daily Sales Count', icon: 'fas fa-receipt' }
 ];
+
+const RESTRICTED_REPORT_PATHS = new Set(['/inventory-daily-count', '/daily-sales-count']);
 
 const SCRAP_LINKS = [
   { to: '/scrap-feed-stats', label: 'Scrap feed stats', icon: 'fas fa-table' },
@@ -40,14 +41,18 @@ const submenuLinkClass = (active) =>
     active ? 'active' : ''
   }`;
 
-const Sidebar = ({ mobileOpen, onCloseMobile, isDesktop }) => {
+const Sidebar = ({ mobileOpen, onCloseMobile, isDesktop, onRequestLogout }) => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
   const isActive = (path) => location.pathname === path;
   const role = (currentUser?.role || 'viewer').toLowerCase();
   const isAdmin = role === 'admin';
+  const isEditor = role === 'editor';
   const isViewer = role === 'viewer';
+  const canSeeRestrictedReports = isAdmin || isEditor;
+  const visibleReportLinks = canSeeRestrictedReports
+    ? REPORT_LINKS
+    : REPORT_LINKS.filter((l) => !RESTRICTED_REPORT_PATHS.has(l.to));
 
   const [reportsMenuOpen, setReportsMenuOpen] = useState(() =>
     isViewer || REPORT_PATHS.some((p) => location.pathname === p)
@@ -70,13 +75,8 @@ const Sidebar = ({ mobileOpen, onCloseMobile, isDesktop }) => {
   };
 
   const handleFooterLogout = () => {
-    if (!window.confirm('Sign out?')) return;
-    flushSync(() => {
-      logout();
-    });
-    window.setTimeout(() => {
-      navigate('/login', { replace: true });
-    }, 1000);
+    if (!isDesktop && onCloseMobile) onCloseMobile();
+    if (typeof onRequestLogout === 'function') onRequestLogout();
   };
 
   const bottomNavItems = [
@@ -161,7 +161,7 @@ const Sidebar = ({ mobileOpen, onCloseMobile, isDesktop }) => {
                 />
               </button>
               <ul className={reportsSubmenuClass} id="reportsSubmenu">
-                {REPORT_LINKS.map(({ to, label, icon }) => (
+                {visibleReportLinks.map(({ to, label, icon }) => (
                   <li key={to}>
                     <Link
                       to={to}

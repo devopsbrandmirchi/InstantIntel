@@ -38,13 +38,20 @@ const PrivateRoute = ({ children }) => {
   return currentUser ? children : <Navigate to="/login" />;
 };
 
-const RoleRoute = ({ children, allowViewer = false }) => {
+const RoleRoute = ({ children, allowViewer = false, allowedRoles }) => {
   const { currentUser, loading } = useAuth();
   if (loading) return <AppLoadingScreen message="Verifying access…" />;
   if (!currentUser) return <Navigate to="/login" replace />;
 
   const role = (currentUser.role || 'viewer').toLowerCase();
   if (role === 'admin') return children;
+
+  if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
+    const allowed = allowedRoles.map((r) => String(r).toLowerCase());
+    if (allowed.includes(role)) return children;
+    return <Navigate to="/access-denied-admin" replace />;
+  }
+
   if (allowViewer) return children;
 
   return <Navigate to="/access-denied-admin" replace />;
@@ -213,7 +220,7 @@ function App() {
           <Route
             path="/inventory-daily-count"
             element={
-              <RoleRoute allowViewer>
+              <RoleRoute allowedRoles={['editor']}>
                 <Layout>
                   <InventoryDailyCount />
                 </Layout>
@@ -223,7 +230,7 @@ function App() {
           <Route
             path="/daily-sales-count"
             element={
-              <RoleRoute allowViewer>
+              <RoleRoute allowedRoles={['editor']}>
                 <Layout>
                   <DailySalesCount />
                 </Layout>
