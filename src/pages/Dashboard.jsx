@@ -43,7 +43,9 @@ function formatUsInteger(n) {
 
 const Dashboard = () => {
   const { currentUser } = useAuth();
-  const isAdmin = (currentUser?.role || '').toLowerCase() === 'admin';
+  const role = (currentUser?.role || '').toLowerCase();
+  const isAdmin = role === 'admin';
+  const isViewer = role === 'viewer';
   const isRestrictedByAssignment = !isAdmin;
   const assignedClientIds = useMemo(
     () => (Array.isArray(currentUser?.assignedClientIds) ? currentUser.assignedClientIds.map(Number).filter(Number.isFinite) : []),
@@ -73,20 +75,24 @@ const Dashboard = () => {
   const [salesByCustomerLegendVisible, setSalesByCustomerLegendVisible] = useState([]);
 
   useEffect(() => {
+    if (isViewer) return;
     loadDashboardData();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isViewer, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   useEffect(() => {
+    if (isViewer) return;
     loadChartData();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isViewer, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   useEffect(() => {
+    if (isViewer) return;
     loadSalesChartData();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isViewer, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   useEffect(() => {
+    if (isViewer) return;
     loadSalesByCustomerChartData();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isViewer, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   const loadChartData = async () => {
     setChartError(null);
@@ -436,6 +442,10 @@ const Dashboard = () => {
       y: { beginAtZero: true, title: { display: true, text: 'Sales (units)' } }
     }
   }), []);
+
+  if (isViewer) {
+    return <div className="page-content text-xs" />;
+  }
 
   if (dashboardLoading) {
     return (
