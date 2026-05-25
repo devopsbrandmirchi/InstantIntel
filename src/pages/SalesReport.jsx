@@ -62,8 +62,8 @@ const SalesReport = () => {
   });
   const [dateTo, setDateTo] = useState(() => {
     const now = new Date();
-    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    return last.toISOString().slice(0, 10);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return today.toISOString().slice(0, 10);
   });
   const [rawRows, setRawRows] = useState([]);
   const [loading, setLoading] = useState(true);

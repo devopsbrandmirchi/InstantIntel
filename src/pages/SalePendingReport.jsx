@@ -5,22 +5,8 @@ import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelec
 import { useAuth } from '../contexts/AuthContext';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import DateRangePicker from '../components/DateRangePicker';
 ChartJS.register(ArcElement, Tooltip, Legend);
-
-function todayLocalISODate() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, '0');
-  const d = String(now.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-/** `YYYY-MM-DD` → US display without UTC shift */
-function formatYmdUs(ymd) {
-  if (!ymd || !/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '—';
-  const [y, m, d] = ymd.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-}
 
 const REQUEST_TIMEOUT_MS = 30000;
 const CLIENTS_LOAD_TIMEOUT_MS = 40000;
@@ -69,7 +55,16 @@ const SalePendingReport = () => {
   const [clients, setClients] = useState([]);
   const [clientsError, setClientsError] = useState(null);
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [reportDate, setReportDate] = useState(todayLocalISODate);
+  const [dateFrom, setDateFrom] = useState(() => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    return first.toISOString().slice(0, 10);
+  });
+  const [dateTo, setDateTo] = useState(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return today.toISOString().slice(0, 10);
+  });
   const [rawRows, setRawRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -134,7 +129,8 @@ const SalePendingReport = () => {
     setLoading(true);
     try {
       let q = supabase.from('soldoutvins').select('*').not('sold_date', 'is', null);
-      if (reportDate) q = q.eq('sold_date', reportDate);
+      if (dateFrom) q = q.gte('sold_date', dateFrom);
+      if (dateTo) q = q.lte('sold_date', dateTo);
       if (isRestrictedByAssignment) {
         if (assignedClientIds.length === 0) {
           if (gen === pendingReportFetchGen.current) {
@@ -180,7 +176,7 @@ const SalePendingReport = () => {
 
   useEffect(() => {
     loadReportData();
-  }, [selectedClientId, reportDate, currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [selectedClientId, dateFrom, dateTo, currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
 
   const filteredRows = useMemo(() => {
     let rows = rawRows;
@@ -414,15 +410,16 @@ const SalePendingReport = () => {
             )}
           </div>
           <div>
-            <label className={labelClass} htmlFor="sale-pending-report-date">
-              Report date
-            </label>
-            <input
-              id="sale-pending-report-date"
-              type="date"
-              value={reportDate}
-              onChange={(e) => setReportDate(e.target.value || todayLocalISODate())}
-              className={inputClass}
+            <label className={labelClass}>Sold date range</label>
+            <DateRangePicker
+              valueFrom={dateFrom}
+              valueTo={dateTo}
+              onChange={(from, to) => {
+                setDateFrom(from);
+                setDateTo(to);
+              }}
+              placeholder="All dates"
+              buttonClassName={inputClass.replace('min-h-0 h-7', '')}
             />
           </div>
           <div>
@@ -445,7 +442,7 @@ const SalePendingReport = () => {
         </div>
         <div className="text-gray-700 font-semibold text-xs">
           {selectedClientName !== 'All clients' && `${selectedClientName} · `}
-          {formatYmdUs(reportDate)}
+          {dateFrom || dateTo ? `${dateFrom || '…'} – ${dateTo || '…'}` : 'All dates'}
         </div>
       </div>
 
@@ -471,7 +468,7 @@ const SalePendingReport = () => {
       <div className="bg-brand-navy text-white px-4 py-1.5 rounded mb-3">
         <h2 className="text-sm font-bold">Sale pending report</h2>
         <p className="text-[11px] text-white/85 font-normal mt-0.5">
-          Rows where <code className="bg-white/15 px-1 rounded">sold_date</code> matches the report date (default today). Source:{' '}
+          Rows where <code className="bg-white/15 px-1 rounded">sold_date</code> falls within the selected range (default this month). Source:{' '}
           <code className="bg-white/15 px-1 rounded">soldoutvins</code>.
         </p>
       </div>
