@@ -4,6 +4,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../contexts/AuthContext';
 import { loginPageLogoUrl } from '../lib/publicAssets';
+import { getDefaultHomePath } from '../lib/defaultHomePath';
 
 const useMediaQuery = (query) => {
   const [matches, setMatches] = useState(() =>
@@ -116,6 +117,7 @@ const Layout = ({ children }) => {
   };
 
   const pageTitle = pageTitles[location.pathname] || 'Dashboard';
+  const homePath = getDefaultHomePath(currentUser?.role);
 
   return (
     <div className="layout-app min-h-screen flex flex-col bg-brand-page">
@@ -134,7 +136,7 @@ const Layout = ({ children }) => {
             <i className="fas fa-bars text-lg" />
           </button>
           <Link
-            to="/dashboard"
+            to={homePath}
             className="relative z-[1] flex shrink-0 items-center py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-sm"
             title="Instant Intel RVs"
           >

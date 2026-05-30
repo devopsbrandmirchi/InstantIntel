@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginPageLogoUrl } from '../lib/publicAssets';
+import { getDefaultHomePath } from '../lib/defaultHomePath';
 import {
   AUTH_BRAND_NAVY,
   AUTH_PANEL_WHITE,
@@ -34,8 +35,8 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const result = await login(email, password);
+      navigate(getDefaultHomePath(result?.role));
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -59,7 +60,7 @@ const Login = () => {
       await completePasswordRecovery(recoveryPwd);
       setRecoveryPwd('');
       setRecoveryConfirm('');
-      navigate('/dashboard', { replace: true });
+      navigate(getDefaultHomePath(currentUser?.role), { replace: true });
     } catch (err) {
       setRecoveryError(err.message || 'Could not update password.');
     } finally {

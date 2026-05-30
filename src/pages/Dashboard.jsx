@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Line } from 'react-chartjs-2';
@@ -444,7 +445,7 @@ const Dashboard = () => {
   }), []);
 
   if (isViewer) {
-    return <div className="page-content text-xs" />;
+    return <Navigate to="/inventory-report" replace />;
   }
 
   if (dashboardLoading) {

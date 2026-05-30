@@ -112,18 +112,20 @@ const Sidebar = ({ mobileOpen, onCloseMobile, isDesktop, onRequestLogout }) => {
         aria-label="Sidebar links"
       >
         <ul className="space-y-1 pb-2">
-          <li>
-            <Link
-              to="/dashboard"
-              onClick={handleNavClick}
-              className={linkTop(isActive('/dashboard'))}
-              data-page="dashboard"
-              title="Dashboard"
-            >
-              <i className="fas fa-tachometer-alt mr-3 shrink-0 text-lg md:text-xl" />
-              <span className="nav-text">Dashboard</span>
-            </Link>
-          </li>
+          {!isViewer && (
+            <li>
+              <Link
+                to="/dashboard"
+                onClick={handleNavClick}
+                className={linkTop(isActive('/dashboard'))}
+                data-page="dashboard"
+                title="Dashboard"
+              >
+                <i className="fas fa-tachometer-alt mr-3 shrink-0 text-lg md:text-xl" />
+                <span className="nav-text">Dashboard</span>
+              </Link>
+            </li>
+          )}
 
           <li className="sidebar-nav-section-label list-none" aria-hidden="true">
             <div className="nav-section-title px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.14em] text-brand-navy/50">

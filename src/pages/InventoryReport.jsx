@@ -26,7 +26,9 @@ function escapeCsvCell(val) {
 
 const InventoryReport = () => {
   const { currentUser } = useAuth();
-  const isAdmin = (currentUser?.role || '').toLowerCase() === 'admin';
+  const role = (currentUser?.role || '').toLowerCase();
+  const isAdmin = role === 'admin';
+  const isViewer = role === 'viewer';
   const isRestrictedByAssignment = !isAdmin;
   const assignedClientIds = useMemo(
     () => (Array.isArray(currentUser?.assignedClientIds) ? currentUser.assignedClientIds.map(Number).filter(Number.isFinite) : []),
@@ -310,7 +312,9 @@ const InventoryReport = () => {
 
   const selectedClientName = selectedClientId
     ? (clients.find((c) => String(c.id) === selectedClientId)?.full_name || 'Client')
-    : 'All clients';
+    : isViewer
+      ? '—'
+      : 'All clients';
 
   return (
     <div className="text-xs space-y-3">
@@ -325,7 +329,7 @@ const InventoryReport = () => {
               aria-invalid={!!clientsError}
               aria-describedby={clientsError ? 'clients-error' : undefined}
             >
-              <option value="">All clients</option>
+              {!isViewer && <option value="">All clients</option>}
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>{c.full_name || `Client #${c.id}`}</option>
               ))}
@@ -370,7 +374,7 @@ const InventoryReport = () => {
           </div>
         </div>
         <div className="text-gray-700 font-semibold text-xs">
-          {reportDate} {selectedClientName !== 'All clients' ? ` · ${selectedClientName}` : ''}
+          {reportDate} {selectedClientId && selectedClientName !== '—' ? ` · ${selectedClientName}` : ''}
         </div>
       </div>
 

@@ -27,6 +27,14 @@ import LoginHistory from './pages/LoginHistory';
 import RouteErrorBoundary from './components/RouteErrorBoundary';
 import AdminAccessDenied from './pages/AdminAccessDenied';
 import ScraperControl from './pages/ScraperControl';
+import { getDefaultHomePath } from './lib/defaultHomePath';
+
+const DefaultHomeRedirect = () => {
+  const { currentUser, loading } = useAuth();
+  if (loading) return <AppLoadingScreen message="One moment…" />;
+  if (!currentUser) return <Navigate to="/login" replace />;
+  return <Navigate to={getDefaultHomePath(currentUser.role)} replace />;
+};
 
 const PrivateRoute = ({ children }) => {
   const { currentUser, loading } = useAuth();
@@ -65,7 +73,7 @@ const GuestRoute = ({ children }) => {
   }
 
   if (currentUser && !passwordRecoveryPending) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultHomePath(currentUser.role)} replace />;
   }
 
   return children;
@@ -317,7 +325,7 @@ function App() {
               </RoleRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<DefaultHomeRedirect />} />
         </Routes>
       </Router>
     </AuthProvider>

@@ -156,8 +156,9 @@ export const AuthProvider = ({ children }) => {
       console.warn('Role/profile load failed:', err?.message);
     }
 
+    let previousRole = null;
     setCurrentUser((prev) => {
-      const previousRole =
+      previousRole =
         prev?.id === supabaseUser.id && prev?.role ? String(prev.role).toLowerCase() : null;
       const role = (roleFromDb || previousRole || baseUser.role || '').toLowerCase() || 'viewer';
       return {
@@ -166,6 +167,13 @@ export const AuthProvider = ({ children }) => {
         assignedClientIds
       };
     });
+
+    const role = (roleFromDb || previousRole || baseUser.role || '').toLowerCase() || 'viewer';
+    return {
+      ...baseUser,
+      role,
+      assignedClientIds
+    };
   };
 
   const hydrateRef = useRef(hydrateUserFromSession);
@@ -289,9 +297,9 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (data?.user && data?.session) {
-        await hydrateUserFromSession(data.user, data.session);
+        const user = await hydrateUserFromSession(data.user, data.session);
         recordLoginHistory({ userId: data.user.id, email: data.user.email }).catch(() => {});
-        return { success: true };
+        return { success: true, role: user?.role || 'viewer' };
       }
 
       throw new Error('Login failed. No session returned.');
