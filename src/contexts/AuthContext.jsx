@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
+import { getPasswordResetRedirectUrl } from '../lib/authRedirectUrl';
 import { withTimeout } from '../lib/requestWithTimeout';
 import { recordLoginHistory } from '../lib/loginHistory';
 
@@ -433,14 +434,11 @@ export const AuthProvider = ({ children }) => {
 
   const clearConnectionError = () => setConnectionError(null);
 
-  /** Password reset email; set VITE_AUTH_REDIRECT_URL to full URL if login is not at site root. */
+  /** Password reset email. Uses VITE_AUTH_REDIRECT_URL on Vercel (redeploy after setting). */
   const requestPasswordReset = async (email) => {
     const trimmed = String(email || '').trim();
     if (!trimmed) throw new Error('Enter your email.');
-    const envUrl = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
-    const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '') || '';
-    const redirectTo =
-      envUrl || `${window.location.origin}${basePath ? `${basePath}` : ''}/login`;
+    const redirectTo = getPasswordResetRedirectUrl();
     const { error } = await supabase.auth.resetPasswordForEmail(trimmed, { redirectTo });
     if (error) throw new Error(error.message || 'Could not send reset email.');
   };
