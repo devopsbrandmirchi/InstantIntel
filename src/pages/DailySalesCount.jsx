@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
+import { fetchReportClients } from '../lib/loadReportClients';
 
 const TAB_LIST = 'list';
 const TAB_GRID = 'grid';
@@ -55,7 +56,6 @@ const DailySalesCount = () => {
     setError(null);
     try {
       let countQ = supabase.from('sales_daily_count').select('id, customer_id, sold_date, sale_count');
-      let clientsQ = supabase.from('clients').select('id, full_name').eq('is_active', true);
       if (isRestrictedByAssignment) {
         if (assignedClientIds.length === 0) {
           setCounts([]);
@@ -64,11 +64,13 @@ const DailySalesCount = () => {
           return;
         }
         countQ = countQ.in('customer_id', assignedClientIds);
-        clientsQ = clientsQ.in('id', assignedClientIds);
       }
       const [countRes, clientsRes] = await Promise.all([
         countQ.order('sold_date', { ascending: false }),
-        clientsQ.order('full_name'),
+        fetchReportClients({
+          restrictByAssignment: isRestrictedByAssignment,
+          assignedClientIds,
+        }),
       ]);
       if (countRes.error) throw countRes.error;
       if (clientsRes.error) throw clientsRes.error;

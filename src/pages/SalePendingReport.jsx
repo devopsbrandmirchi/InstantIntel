@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
 import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
+import { fetchReportClients } from '../lib/loadReportClients';
 import { useAuth } from '../contexts/AuthContext';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -95,14 +96,10 @@ const SalePendingReport = () => {
     setClientsError(null);
     try {
       const { data, error } = await withTimeout(
-        (() => {
-          let q = supabase.from('clients').select('id, full_name').eq('is_active', true);
-          if (isRestrictedByAssignment) {
-            if (assignedClientIds.length === 0) return q.limit(0);
-            q = q.in('id', assignedClientIds);
-          }
-          return q.order('full_name');
-        })(),
+        fetchReportClients({
+          restrictByAssignment: isRestrictedByAssignment,
+          assignedClientIds,
+        }),
         CLIENTS_LOAD_TIMEOUT_MS,
         'Loading clients timed out. Click Retry or refresh the page.'
       );

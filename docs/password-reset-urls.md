@@ -1,23 +1,17 @@
 # Password reset links (Forgot password)
 
-Production uses **`VITE_AUTH_REDIRECT_URL`** on Vercel. No Supabase dashboard change is required for the normal setup.
+Production is configured with **Vercel** (`VITE_AUTH_REDIRECT_URL`) and **Supabase** redirect allow list.
 
-## Production (Vercel) — required
+## Production setup (done)
 
-1. **Vercel → Project → Settings → Environment Variables**
+| Where | Setting | Value |
+|-------|---------|--------|
+| **Vercel** → Environment Variables | `VITE_AUTH_REDIRECT_URL` | `https://instant-intel-silk.vercel.app/login` |
+| **Supabase** → Authentication → URL Configuration → Redirect URLs | allow list | `https://instant-intel-silk.vercel.app/**` |
 
-   | Name | Value |
-   |------|--------|
-   | `VITE_AUTH_REDIRECT_URL` | `https://instant-intel-silk.vercel.app/login` |
+After changing Vercel env vars, **redeploy** so the new `VITE_*` value is baked into the build.
 
-   Enable for **Production** (and Preview if you test preview URLs there).
-
-2. **Redeploy** the project after saving the variable.  
-   Vite embeds `VITE_*` at **build time**, so a new deployment is required; adding the variable alone does not update an existing build.
-
-3. Request a **new** password-reset email after redeploy. Old emails still contain the previous redirect.
-
-The app passes this URL to Supabase as `redirectTo` when you click **Forgot password** (`src/lib/authRedirectUrl.js`).
+Request a **new** password-reset email after deploy — old emails keep the previous redirect.
 
 ## Local development
 
@@ -29,16 +23,11 @@ VITE_AUTH_REDIRECT_URL=http://localhost:3000/login
 
 Restart `npm run dev` after changing `.env`.
 
-## If the link still opens localhost
+Optional for local reset emails: add `http://localhost:3000/**` to the same Supabase **Redirect URLs** list.
 
-Only then check **Supabase Dashboard → Authentication → URL Configuration**:
+## If the link still misbehaves
 
-| Setting | Suggested value |
-|---------|-----------------|
-| **Site URL** | `https://instant-intel-silk.vercel.app` |
-| **Redirect URLs** | `https://instant-intel-silk.vercel.app/**` |
-
-Supabase may fall back to **Site URL** when the redirect from the email is not allowed. That fallback is often still `http://localhost:3000` from early project setup. Updating Supabase fixes that edge case; it is not part of the default Vercel-only flow.
+Confirm **Supabase → Site URL** is not still `http://localhost:3000`. Set it to `https://instant-intel-silk.vercel.app` if needed.
 
 ## How the app uses this
 

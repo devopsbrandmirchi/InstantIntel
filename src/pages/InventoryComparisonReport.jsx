@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
+import { fetchReportClients } from '../lib/loadReportClients';
 import { useAuth } from '../contexts/AuthContext';
 
 const REQUEST_TIMEOUT_MS = 25000;
@@ -233,14 +234,10 @@ const InventoryComparisonReport = () => {
     setClientsError(null);
     try {
       const { data, error } = await withTimeout(
-        (() => {
-          let q = supabase.from('clients').select('id, full_name').eq('is_active', true);
-          if (isRestrictedByAssignment) {
-            if (assignedClientIds.length === 0) return q.limit(0);
-            q = q.in('id', assignedClientIds);
-          }
-          return q.order('full_name');
-        })(),
+        fetchReportClients({
+          restrictByAssignment: isRestrictedByAssignment,
+          assignedClientIds,
+        }),
         CLIENTS_LOAD_TIMEOUT_MS,
         'Loading clients timed out. Click Retry or refresh the page.'
       );
