@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
-import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
-import { fetchReportClients } from '../lib/loadReportClients';
+import { useReportClients } from '../lib/useReportClients';
 import { useAuth } from '../contexts/AuthContext';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
@@ -10,7 +9,6 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const REQUEST_TIMEOUT_MS = 20000;
-const CLIENTS_LOAD_TIMEOUT_MS = 40000;
 
 function parsePrice(val) {
   if (val == null) return 0;
@@ -28,16 +26,20 @@ function escapeCsvCell(val) {
 const InventoryReport = () => {
   const { currentUser } = useAuth();
   const role = (currentUser?.role || '').toLowerCase();
-  const isAdmin = role === 'admin';
   const isViewer = role === 'viewer';
-  const isRestrictedByAssignment = !isAdmin;
-  const assignedClientIds = useMemo(
-    () => (Array.isArray(currentUser?.assignedClientIds) ? currentUser.assignedClientIds.map(Number).filter(Number.isFinite) : []),
-    [currentUser?.assignedClientIds]
-  );
-  const [clients, setClients] = useState([]);
-  const [clientsError, setClientsError] = useState(null);
-  const [selectedClientId, setSelectedClientId] = useState('');
+  const {
+    clients,
+    clientsError,
+    selectedClientId,
+    setSelectedClientId,
+    assignedClientIds,
+    assignmentKey,
+    isRestrictedByAssignment,
+    loadClients,
+  } = useReportClients({
+    currentUser,
+    allowAllClients: !isViewer,
+  });
   const [reportDate, setReportDate] = useState(() => {
     const d = new Date();
     return d.toISOString().slice(0, 10);
@@ -56,29 +58,6 @@ const InventoryReport = () => {
 
   /** Bumps when a new inventory fetch starts; ignore async results from superseded runs. */
   const inventoryFetchGen = useRef(0);
-
-  const loadClients = async () => {
-    setClientsError(null);
-    try {
-      const { data, error } = await withTimeout(
-        fetchReportClients({
-          restrictByAssignment: isRestrictedByAssignment,
-          assignedClientIds,
-        }),
-        CLIENTS_LOAD_TIMEOUT_MS,
-        'Loading clients timed out. Click Retry or refresh the page.'
-      );
-      if (error) throw error;
-      const list = data || [];
-      setClients(list);
-      setSelectedClientId((prev) => nextSelectedClientIdAfterLoad(list, prev));
-    } catch (err) {
-      console.error('Error loading clients:', err);
-      setClients([]);
-      setSelectedClientId('');
-      setClientsError(err?.message || 'Failed to load clients. Check your connection or permissions.');
-    }
-  };
 
   const loadInventoryData = async () => {
     const gen = ++inventoryFetchGen.current;
@@ -122,23 +101,13 @@ const InventoryReport = () => {
   };
 
   useEffect(() => {
-    loadClients();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
-
-  useEffect(() => {
     inventoryFetchGen.current += 1;
     setRawRows([]);
-    setSelectedClientId('');
-  }, [currentUser?.id]);
-
-  useEffect(() => {
-    inventoryFetchGen.current += 1;
-    setRawRows([]);
-  }, [isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isRestrictedByAssignment, assignmentKey]);
 
   useEffect(() => {
     loadInventoryData();
-  }, [selectedClientId, reportDate, currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [selectedClientId, reportDate, currentUser?.id, isRestrictedByAssignment, assignmentKey]);
 
   const filteredRows = useMemo(() => {
     let rows = rawRows;
@@ -334,7 +303,7 @@ const InventoryReport = () => {
             {clientsError && (
               <p id="clients-error" className="mt-1 text-red-600 text-xs flex items-center gap-2">
                 {clientsError}
-                <button type="button" onClick={loadClients} className="text-brand-teal hover:underline font-medium">
+                <button type="button" onClick={() => loadClients({ bypassCache: true })} className="text-brand-teal hover:underline font-medium">
                   Retry
                 </button>
               </p>
@@ -359,7 +328,7 @@ const InventoryReport = () => {
             <button
               type="button"
               onClick={() => {
-                void Promise.all([loadClients(), loadInventoryData()]);
+                void Promise.all([loadClients({ bypassCache: true }), loadInventoryData()]);
               }}
               disabled={loading}
               className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold px-3.5 h-7 rounded-md bg-brand-navy text-white shadow-sm hover:bg-brand-navy-light active:bg-brand-navy disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-teal/50 focus:ring-offset-1"

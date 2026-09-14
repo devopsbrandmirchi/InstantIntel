@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { withTimeout } from '../lib/requestWithTimeout';
-import { fetchReportClients } from '../lib/loadReportClients';
+import {
+  assignedClientIdsKey,
+  fetchReportClients,
+  invalidateReportClientsCache,
+  reportClientsEqual,
+} from '../lib/loadReportClients';
 import { useAuth } from '../contexts/AuthContext';
 
 const REQUEST_TIMEOUT_MS = 25000;
@@ -183,12 +188,10 @@ const InventoryComparisonReport = () => {
   const { currentUser, refreshProfile } = useAuth();
   const isAdmin = (currentUser?.role || '').toLowerCase() === 'admin';
   const isRestrictedByAssignment = !isAdmin;
+  const assignmentKey = assignedClientIdsKey(currentUser?.assignedClientIds);
   const assignedClientIds = useMemo(
-    () =>
-      Array.isArray(currentUser?.assignedClientIds)
-        ? currentUser.assignedClientIds.map(Number).filter(Number.isFinite)
-        : [],
-    [currentUser?.assignedClientIds]
+    () => (assignmentKey ? assignmentKey.split(',').map(Number) : []),
+    [assignmentKey]
   );
 
   const [clients, setClients] = useState([]);
@@ -207,6 +210,7 @@ const InventoryComparisonReport = () => {
     year: '',
     pricerange: ''
   });
+  const clientsLoadGen = useRef(0);
 
   /** True on first paint for viewers so we do not flash "no clients" before re-loading profile from DB. */
   const [profileRefreshing, setProfileRefreshing] = useState(!isAdmin);
@@ -230,45 +234,55 @@ const InventoryComparisonReport = () => {
     };
   }, [isAdmin, refreshProfile]);
 
-  const loadClients = useCallback(async () => {
+  const loadClients = useCallback(async ({ bypassCache = false } = {}) => {
+    const gen = ++clientsLoadGen.current;
     setClientsError(null);
     try {
+      if (bypassCache) invalidateReportClientsCache();
       const { data, error } = await withTimeout(
         fetchReportClients({
           restrictByAssignment: isRestrictedByAssignment,
           assignedClientIds,
+          bypassCache,
         }),
         CLIENTS_LOAD_TIMEOUT_MS,
         'Loading clients timed out. Click Retry or refresh the page.'
       );
+      if (gen !== clientsLoadGen.current) return;
       if (error) throw error;
-      setClients(data || []);
+      const list = data || [];
+      setClients((prev) => (reportClientsEqual(prev, list) ? prev : list));
     } catch (err) {
+      if (gen !== clientsLoadGen.current) return;
       console.error('Error loading clients:', err);
       setClients([]);
       setClientsError(err?.message || 'Failed to load clients.');
     }
-  }, [isRestrictedByAssignment, assignedClientIds.join(','), currentUser?.id]);
+  }, [isRestrictedByAssignment, assignmentKey, assignedClientIds]);
 
   useEffect(() => {
-    loadClients();
-  }, [loadClients, currentUser?.id]);
+    void loadClients({ bypassCache: false });
+  }, [currentUser?.id, isRestrictedByAssignment, assignmentKey, loadClients]);
 
   useEffect(() => {
     if (clients.length === 0) {
-      setSelectedClientIds([]);
+      setSelectedClientIds((prev) => (prev.length === 0 ? prev : []));
       return;
     }
     setSelectedClientIds((prev) => {
-      const valid = prev.filter((id) => clients.some((c) => c.id === id));
+      const idSet = new Set(clients.map((c) => String(c.id)));
+      const valid = prev.filter((id) => idSet.has(String(id)));
       if (valid.length === 0) return [clients[0].id];
+      if (valid.length === prev.length && valid.every((id, i) => String(id) === String(prev[i]))) return prev;
       return valid;
     });
   }, [clients]);
 
   useEffect(() => {
     setRawRows([]);
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isRestrictedByAssignment, assignmentKey]);
+
+  const selectedClientsKey = selectedClientIds.map(String).sort().join(',');
 
   const loadInventory = useCallback(async () => {
     setMessage({ type: '', text: '' });
@@ -302,9 +316,11 @@ const InventoryComparisonReport = () => {
     }
   }, [
     reportDate,
-    selectedClientIds.join(','),
+    selectedClientsKey,
+    selectedClientIds,
     isRestrictedByAssignment,
-    assignedClientIds.join(','),
+    assignmentKey,
+    assignedClientIds,
     currentUser?.id
   ]);
 
@@ -328,7 +344,7 @@ const InventoryComparisonReport = () => {
       }
     }
     await new Promise((r) => setTimeout(r, 0));
-    loadClientsRef.current();
+    void loadClientsRef.current({ bypassCache: true });
     loadInventoryRef.current();
   };
 
@@ -443,7 +459,7 @@ const InventoryComparisonReport = () => {
       {clientsError && (
         <p className="text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mb-3 flex flex-wrap items-center gap-2">
           {clientsError}
-          <button type="button" onClick={loadClients} className="text-brand-teal hover:underline font-medium">
+          <button type="button" onClick={() => loadClients({ bypassCache: true })} className="text-brand-teal hover:underline font-medium">
             Retry
           </button>
         </p>

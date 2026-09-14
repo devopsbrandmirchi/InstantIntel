@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { nextSelectedClientIdAfterLoad } from '../lib/reconcileReportClientSelection';
-import { fetchReportClients } from '../lib/loadReportClients';
+import { assignedClientIdsKey, fetchReportClients, reportClientsEqual } from '../lib/loadReportClients';
 
 const TAB_LIST = 'list';
 const TAB_GRID = 'grid';
@@ -11,9 +11,10 @@ const InventoryDailyCount = () => {
   const { currentUser } = useAuth();
   const isAdmin = (currentUser?.role || '').toLowerCase() === 'admin';
   const isRestrictedByAssignment = !isAdmin;
+  const assignmentKey = assignedClientIdsKey(currentUser?.assignedClientIds);
   const assignedClientIds = useMemo(
-    () => (Array.isArray(currentUser?.assignedClientIds) ? currentUser.assignedClientIds.map(Number).filter(Number.isFinite) : []),
-    [currentUser?.assignedClientIds]
+    () => (assignmentKey ? assignmentKey.split(',').map(Number) : []),
+    [assignmentKey]
   );
   const [counts, setCounts] = useState([]);
   const [clients, setClients] = useState([]);
@@ -50,7 +51,7 @@ const InventoryDailyCount = () => {
       if (clientsRes.error) throw clientsRes.error;
       const clientList = clientsRes.data || [];
       setCounts(countRes.data || []);
-      setClients(clientList);
+      setClients((prev) => (reportClientsEqual(prev, clientList) ? prev : clientList));
       setSelectedClientId((prev) => nextSelectedClientIdAfterLoad(clientList, prev, { allowAllClients: true }));
     } catch (err) {
       console.error('Inventory daily count load error:', err);
@@ -63,7 +64,7 @@ const InventoryDailyCount = () => {
 
   useEffect(() => {
     loadData();
-  }, [currentUser?.id, isRestrictedByAssignment, assignedClientIds.join(',')]);
+  }, [currentUser?.id, isRestrictedByAssignment, assignmentKey]);
 
   const clientsMap = useMemo(() => Object.fromEntries((clients || []).map((c) => [c.id, c.full_name || `Client #${c.id}`])), [clients]);
 
