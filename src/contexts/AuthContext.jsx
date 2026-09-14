@@ -285,9 +285,10 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
-  const getAuthToken = () => {
-    return currentUser?.token ?? null;
-  };
+  /** Stable identity — pages must not re-fetch just because the JWT rotated. */
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+  const getAuthToken = useCallback(() => currentUserRef.current?.token ?? null, []);
 
   const login = async (email, password) => {
     try {

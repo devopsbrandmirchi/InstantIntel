@@ -1,7 +1,16 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 const LOG_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR'];
+
+function spiderListsEqual(a, b) {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 async function apiFetch(path, { method = 'GET', token, body } = {}) {
   const headers = {
@@ -37,6 +46,8 @@ async function apiFetch(path, { method = 'GET', token, body } = {}) {
 
 const ScraperControl = () => {
   const { getAuthToken } = useAuth();
+  const getAuthTokenRef = useRef(getAuthToken);
+  getAuthTokenRef.current = getAuthToken;
   const [spiders, setSpiders] = useState([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState(null);
@@ -44,31 +55,37 @@ const ScraperControl = () => {
   const [logLevel, setLogLevel] = useState('INFO');
   const [starting, setStarting] = useState(false);
   const [startMessage, setStartMessage] = useState(null);
+  const loadGen = useRef(0);
 
-  const loadSpiders = useCallback(async () => {
-    const token = getAuthToken();
+  const loadSpiders = useCallback(async ({ showLoading = true } = {}) => {
+    const gen = ++loadGen.current;
+    const token = getAuthTokenRef.current();
     if (!token) {
+      if (gen !== loadGen.current) return;
       setListError('Not signed in.');
       setLoadingList(false);
       return;
     }
-    setLoadingList(true);
+    // Keep the dropdown mounted during background retries — only show spinner on first load / empty list.
+    if (showLoading) setLoadingList(true);
     setListError(null);
     try {
       const data = await apiFetch('/api/scraper/spiders', { token });
+      if (gen !== loadGen.current) return;
       const list = Array.isArray(data.spiders) ? data.spiders : [];
-      setSpiders(list);
+      setSpiders((prev) => (spiderListsEqual(prev, list) ? prev : list));
       setSelectedSpider((prev) => (list.includes(prev) ? prev : list[0] || ''));
     } catch (e) {
+      if (gen !== loadGen.current) return;
       setSpiders([]);
       setListError(e.message || 'Failed to load spiders');
     } finally {
-      setLoadingList(false);
+      if (gen === loadGen.current) setLoadingList(false);
     }
-  }, [getAuthToken]);
+  }, []);
 
   useEffect(() => {
-    loadSpiders();
+    void loadSpiders({ showLoading: true });
   }, [loadSpiders]);
 
   const handleStart = async () => {
@@ -120,7 +137,7 @@ const ScraperControl = () => {
               {listError}
               <button
                 type="button"
-                onClick={loadSpiders}
+                onClick={() => void loadSpiders({ showLoading: true })}
                 className="ml-2 text-red-800 underline text-xs"
               >
                 Retry
