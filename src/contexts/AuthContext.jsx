@@ -103,22 +103,22 @@ async function fetchUserRoleFromDb(userId) {
   }
 }
 
+/** Returns null when the lookup failed — callers must not treat that as "no clients assigned". */
 async function fetchAssignedClientIds(userId) {
-  try {
-    const { data, error } = await withTimeout(
-      supabase.from('profiles').select('clients').eq('id', userId).single(),
-      PROFILE_MS,
-      'Assigned clients fetch timeout'
-    );
-    if (error) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const { data, error } = await withTimeout(
+        supabase.from('profiles').select('clients').eq('id', userId).single(),
+        PROFILE_MS,
+        'Assigned clients fetch timeout'
+      );
+      if (!error) return normalizeClientIds(data?.clients);
       console.warn('profiles.clients:', error.message || error.code || error);
-      return [];
+    } catch (e) {
+      console.warn('fetchAssignedClientIds:', e?.message || e);
     }
-    return normalizeClientIds(data?.clients);
-  } catch (e) {
-    console.warn('fetchAssignedClientIds:', e?.message || e);
-    return [];
   }
+  return null;
 }
 
 const CONNECTION_ERROR_MESSAGE = 'Unable to connect. Please check your network and refresh.';
@@ -138,6 +138,8 @@ function isRecoveryHash() {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
   const [loading, setLoading] = useState(true);
   const [connectionError, setConnectionError] = useState(null);
   /** User arrived via email reset link — allow /login to show "set new password" instead of redirecting away. */
@@ -158,22 +160,29 @@ export const AuthProvider = ({ children }) => {
     }
 
     let previousRole = null;
+    let nextUser = null;
     setCurrentUser((prev) => {
-      previousRole =
-        prev?.id === supabaseUser.id && prev?.role ? String(prev.role).toLowerCase() : null;
+      const sameUser = prev?.id === supabaseUser.id;
+      previousRole = sameUser && prev?.role ? String(prev.role).toLowerCase() : null;
       const role = (roleFromDb || previousRole || baseUser.role || '').toLowerCase() || 'viewer';
-      return {
+      const loaded = Array.isArray(assignedClientIds);
+      // On a failed lookup keep the last good list instead of blanking the client dropdowns.
+      const keepPrev = !loaded && sameUser && prev?.assignedClientIdsLoaded;
+      nextUser = {
         ...baseUser,
         role,
-        assignedClientIds
+        assignedClientIds: loaded ? assignedClientIds : keepPrev ? prev.assignedClientIds : [],
+        assignedClientIdsLoaded: loaded || !!keepPrev
       };
+      return nextUser;
     });
 
     const role = (roleFromDb || previousRole || baseUser.role || '').toLowerCase() || 'viewer';
-    return {
+    return nextUser || {
       ...baseUser,
       role,
-      assignedClientIds
+      assignedClientIds: Array.isArray(assignedClientIds) ? assignedClientIds : [],
+      assignedClientIdsLoaded: Array.isArray(assignedClientIds)
     };
   };
 
@@ -247,6 +256,17 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
+      /** supabase-js re-emits SIGNED_IN when the tab regains focus; don't re-query role/clients for the same user. */
+      if (
+        event === 'SIGNED_IN' &&
+        session?.user &&
+        currentUserRef.current?.id === session.user.id &&
+        currentUserRef.current?.assignedClientIdsLoaded
+      ) {
+        patchSessionTokens(session);
+        return;
+      }
+
       if (event === 'PASSWORD_RECOVERY' && session?.user) {
         setPasswordRecoveryPending(true);
         try {
@@ -286,8 +306,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /** Stable identity — pages must not re-fetch just because the JWT rotated. */
-  const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
   const getAuthToken = useCallback(() => currentUserRef.current?.token ?? null, []);
 
   const login = async (email, password) => {

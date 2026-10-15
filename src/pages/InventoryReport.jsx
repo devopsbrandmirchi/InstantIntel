@@ -30,6 +30,7 @@ const InventoryReport = () => {
   const {
     clients,
     clientsError,
+    clientsLoaded,
     selectedClientId,
     setSelectedClientId,
     assignedClientIds,
@@ -308,7 +309,7 @@ const InventoryReport = () => {
                 </button>
               </p>
             )}
-            {!clientsError && clients.length === 0 && (
+            {!clientsError && clientsLoaded && clients.length === 0 && (
               <p className="mt-1 text-gray-500 text-xs">No clients found. Add clients in Client Master.</p>
             )}
           </div>

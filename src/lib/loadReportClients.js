@@ -74,9 +74,7 @@ export async function fetchReportClients(opts = {}) {
 
   if (restrictByAssignment) {
     if (!assignedClientIds.length) {
-      const empty = [];
-      reportClientsCache.set(key, { at: Date.now(), data: empty });
-      return { data: empty, error: null };
+      return { data: [], error: null };
     }
     q = q.in('id', assignedClientIds);
   }
